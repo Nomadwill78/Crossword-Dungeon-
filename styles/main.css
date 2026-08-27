@@ -1,0 +1,258 @@
+:root {
+  --bg: #14101c;
+  --panel: #1f1a2c;
+  --panel-light: #2a2340;
+  --stone: #362c4a;
+  --stone-dark: #241e33;
+  --fog: #100c18;
+  --gold: #e8c468;
+  --text: #ece6f7;
+  --text-dim: #9d92b8;
+  --hp: #d64550;
+  --hp-bg: #3a1c20;
+  --mp: #7fd68a;
+  --danger: #d64550;
+  --success: #7fd68a;
+  --font: 'Georgia', 'Times New Roman', serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #23203a, var(--bg) 70%);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+#app { max-width: 1100px; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+
+#hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--stone);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+#hud h1 {
+  font-size: 1.4rem;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  margin: 0;
+}
+
+#hud-stats { display: flex; gap: 1.5rem; align-items: center; }
+.stat { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+.stat .label { color: var(--text-dim); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; }
+
+.bar {
+  width: 120px;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--stone);
+}
+.player-bar, .monster-bar { background: var(--hp-bg); }
+.player-bar .fill, .monster-bar .fill { background: linear-gradient(90deg, var(--hp), #ff8a80); height: 100%; transition: width 0.3s ease; }
+
+main { position: relative; }
+
+#map-view { gap: 1.5rem; flex-wrap: wrap; }
+#map-view:not([hidden]) { display: flex; }
+
+#grid-wrap { flex: 1 1 480px; }
+
+#grid {
+  display: inline-grid;
+  gap: 3px;
+  background: var(--fog);
+  padding: 6px;
+  border-radius: 8px;
+  border: 2px solid var(--stone);
+}
+
+.cell {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.95rem;
+  border-radius: 3px;
+  position: relative;
+  background: var(--stone-dark);
+  color: transparent;
+}
+
+.cell.filled {
+  background: var(--stone);
+  color: var(--text-dim);
+}
+
+.cell.filled.revealed {
+  background: linear-gradient(160deg, var(--panel-light), var(--panel));
+  color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(232, 196, 104, 0.35);
+}
+
+.cell.filled.monster-cell.revealed:not(.cleared) {
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1px rgba(214, 69, 80, 0.6);
+}
+
+.cell .cell-number {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-size: 0.5rem;
+  color: var(--text-dim);
+  font-weight: normal;
+}
+
+#clue-panel { flex: 1 1 320px; max-height: 70vh; overflow-y: auto; }
+#clue-panel h2 { color: var(--gold); font-size: 1rem; margin: 0.75rem 0 0.4rem; }
+
+.clue-item {
+  background: var(--panel);
+  border: 1px solid var(--stone);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  margin-bottom: 0.5rem;
+  transition: opacity 0.2s ease;
+}
+
+.clue-item.locked { opacity: 0.45; }
+.clue-item.cleared { border-color: var(--success); }
+.clue-item.pending-battle { border-color: var(--danger); }
+
+.clue-item .clue-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 0.25rem;
+}
+
+.clue-item .clue-text { font-size: 0.92rem; margin-bottom: 0.4rem; }
+
+.clue-item form { display: flex; gap: 0.4rem; }
+.clue-item input[type="text"] {
+  flex: 1;
+  background: var(--stone-dark);
+  border: 1px solid var(--stone);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.3rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.clue-item button {
+  background: var(--gold);
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.7rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.clue-item button:hover { filter: brightness(1.08); }
+.clue-item button.danger { background: var(--danger); color: var(--text); }
+
+.clue-item.shake input { animation: shake 0.3s; border-color: var(--danger); }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Battle view */
+#battle-view {
+  background: var(--panel);
+  border: 1px solid var(--stone);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+#battle-monster { text-align: center; margin-bottom: 1rem; }
+#battle-monster h2 { color: var(--danger); margin: 0 0 0.4rem; }
+.monster-bar { width: 260px; margin: 0 auto; }
+
+#battle-word { text-align: center; margin: 1rem 0; min-height: 3rem; }
+#word-slots { display: flex; justify-content: center; gap: 0.4rem; min-height: 2.4rem; }
+.slot-tile {
+  background: var(--gold);
+  color: #221b33;
+  font-weight: bold;
+  border-radius: 4px;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#word-feedback { color: var(--text-dim); margin-top: 0.35rem; min-height: 1.2rem; }
+
+#battle-rack { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.rack-tile {
+  background: var(--panel-light);
+  border: 1px solid var(--stone);
+  color: var(--text);
+  border-radius: 6px;
+  width: 2.6rem;
+  height: 2.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+.rack-tile .tile-value { font-size: 0.55rem; color: var(--text-dim); }
+.rack-tile:hover { border-color: var(--gold); }
+
+#battle-controls { display: flex; justify-content: center; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+#battle-controls button {
+  background: var(--gold);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+#clear-word { background: var(--stone); color: var(--text); }
+#combo-indicator { color: var(--success); font-size: 0.85rem; }
+
+#battle-log {
+  max-height: 130px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  border-top: 1px solid var(--stone);
+  padding-top: 0.5rem;
+}
+#battle-log div { margin-bottom: 0.25rem; }
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 16, 0.85);
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+#overlay:not([hidden]) {
+  display: flex;
+}
+#overlay-content {
+  background: var(--panel);
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+}
+#overlay-title { color: var(--gold); font-size: 1.6rem; margin-bottom: 0.5rem; }

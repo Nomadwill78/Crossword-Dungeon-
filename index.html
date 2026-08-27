@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wordsmith's Gambit</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <h1>Wordsmith's Gambit</h1>
+      <div id="hud-stats">
+        <div class="stat"><span class="label">HP</span><div class="bar player-bar"><div id="player-hp-fill" class="fill"></div></div><span id="player-hp-text"></span></div>
+        <div class="stat"><span class="label">Score</span><span id="score-text">0</span></div>
+      </div>
+    </header>
+
+    <main>
+      <section id="map-view">
+        <div id="grid-wrap">
+          <div id="grid"></div>
+        </div>
+        <aside id="clue-panel">
+          <h2>Across</h2>
+          <div class="clue-list" id="across-list"></div>
+          <h2>Down</h2>
+          <div class="clue-list" id="down-list"></div>
+        </aside>
+      </section>
+
+      <section id="battle-view" hidden>
+        <div id="battle-monster">
+          <h2 id="monster-name"></h2>
+          <div class="bar monster-bar"><div id="monster-hp-fill" class="fill"></div></div>
+          <span id="monster-hp-text"></span>
+        </div>
+
+        <div id="battle-word">
+          <div id="word-slots"></div>
+          <div id="word-feedback"></div>
+        </div>
+
+        <div id="battle-rack"></div>
+
+        <div id="battle-controls">
+          <button id="submit-word">Cast Word</button>
+          <button id="clear-word">Clear</button>
+          <span id="combo-indicator"></span>
+        </div>
+
+        <div id="battle-log"></div>
+      </section>
+
+      <div id="overlay" hidden>
+        <div id="overlay-content">
+          <h2 id="overlay-title"></h2>
+          <p id="overlay-text"></p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
