@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "grid": {
+    "supported_sizes": [5, 7, 9],
+    "default_size": 5,
+    "max_regenerate_attempts": 6,
+    "min_acceptable_slots_divisor": 2
+  },
+  "player": {
+    "starting_hp": 100,
+    "starting_max_hp": 100,
+    "starting_ink_drops": 0,
+    "starting_dictionary_fragments": 0
+  },
+  "combat": {
+    "base_damage_per_letter": 5,
+    "length_bonus_thresholds": [
+      { "min_length": 7, "multiplier": 2.0 },
+      { "min_length": 5, "multiplier": 1.5 },
+      { "min_length": 0, "multiplier": 1.0 }
+    ],
+    "combo_streak_bonus_per_hit": 0.15,
+    "max_combo_multiplier": 2.5,
+    "miss_penalty_hp_percent": 0.08
+  },
+  "chains": {
+    "min_chain_length": 2,
+    "chain_bonus_multiplier": 1.5,
+    "chain_window_seconds": 6.0
+  },
+  "ink_economy": {
+    "ink_per_letter": 2,
+    "ink_bonus_length_7_plus": 5,
+    "dictionary_fragment_drop_chance": 0.1,
+    "dictionary_fragments_to_unlock_word": 5
+  },
+  "difficulty_scaling": {
+    "depth_hp_multiplier": 0.15,
+    "depth_attack_multiplier": 0.1,
+    "boss_hp_multiplier": 1.0,
+    "boss_attack_multiplier": 1.0
+  },
+  "save": {
+    "save_path": "user://save_data.json",
+    "backup_dir": "user://backups/",
+    "max_backups": 5,
+    "autosave_interval_seconds": 120,
+    "current_schema_version": 1
+  }
+}

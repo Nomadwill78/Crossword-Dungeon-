@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "enemies": [
+    {
+      "id": "enemy_ink_wretch",
+      "name": "Ink Wretch",
+      "is_boss": false,
+      "hp": 12,
+      "attack": 3,
+      "weak_to_category": "MAGIC_ARCANE",
+      "abilities": ["Smudge: blurs one letter hint for a turn"],
+      "description": "A small stain of spilled ink given restless life."
+    },
+    {
+      "id": "enemy_syllable_wisp",
+      "name": "Syllable Wisp",
+      "is_boss": false,
+      "hp": 16,
+      "attack": 4,
+      "weak_to_category": "NATURE_ELEMENTS",
+      "abilities": ["Echo: repeats your last word, breaking your combo streak"],
+      "description": "A flickering light that mimics whatever it last heard spoken."
+    },
+    {
+      "id": "enemy_anagram_shade",
+      "name": "Anagram Shade",
+      "is_boss": false,
+      "hp": 18,
+      "attack": 5,
+      "weak_to_category": "WEAPONS_ARMOR",
+      "abilities": ["Scramble: shuffles your letter rack"],
+      "description": "A shifting shadow that never holds the same shape twice."
+    },
+    {
+      "id": "enemy_punctuation_fiend",
+      "name": "Punctuation Fiend",
+      "is_boss": false,
+      "hp": 20,
+      "attack": 4,
+      "weak_to_category": "DUNGEON_PLACES",
+      "abilities": ["Interrupt: cuts your next submitted word short by one letter"],
+      "description": "A jagged little pest that delights in cutting sentences off."
+    },
+    {
+      "id": "enemy_grammar_golem",
+      "name": "Grammar Golem",
+      "is_boss": false,
+      "hp": 24,
+      "attack": 5,
+      "weak_to_category": "EMOTIONS_ABSTRACT",
+      "abilities": ["Stone Sentence: hardens for a turn, +50% defense"],
+      "description": "A hulking construct built from misused modifiers."
+    },
+    {
+      "id": "boss_lexicon_warden",
+      "name": "The Lexicon Warden",
+      "is_boss": true,
+      "hp": 70,
+      "attack": 8,
+      "weak_to_category": "MAGIC_ARCANE",
+      "abilities": [
+        "Tome Slam: heavy attack, +50% damage",
+        "Word Ban: forbids one letter from being played for a turn"
+      ],
+      "description": "Ancient guardian of the vault's final word, bound to defend it to the last letter."
+    }
+  ]
+}

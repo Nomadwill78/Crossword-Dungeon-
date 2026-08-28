@@ -1,0 +1,6 @@
+# Godot 4 generated cache — regenerated automatically on first open/import.
+.godot/
+
+# Python bytecode from the balance simulator tooling.
+__pycache__/
+*.pyc

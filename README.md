@@ -8,6 +8,10 @@ This repo is a playable browser prototype of the core loop: crossword-as-map
 generation, corridor unlocking, and word-building combat. It's vanilla
 JS/HTML/CSS with no build step and no external runtime dependencies.
 
+There's also a parallel Godot 4.3 build in [`godot/`](godot/) — an
+independent implementation of the same core mechanic (grid generation,
+navigation, rendering), with its own README, data, and tests.
+
 ## Run it
 
 Any static file server works (ES modules need `http://`, not `file://`):

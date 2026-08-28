@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "templates": [
+    { "id": "5x5_sparse", "size": 5, "target_slots": 7 },
+    { "id": "5x5_dense", "size": 5, "target_slots": 9 },
+    { "id": "7x7_sparse", "size": 7, "target_slots": 9 },
+    { "id": "7x7_dense", "size": 7, "target_slots": 11 },
+    { "id": "9x9_sparse", "size": 9, "target_slots": 13 },
+    { "id": "9x9_dense", "size": 9, "target_slots": 16 }
+  ]
+}

@@ -1,0 +1,925 @@
+{
+  "version": 1,
+  "clues": [
+    {
+      "id": "clue_001_orc",
+      "answer": "ORC",
+      "length": 3,
+      "category": "FANTASY_CREATURES",
+      "clue": "Brutish green-skinned raider",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_002_imp",
+      "answer": "IMP",
+      "length": 3,
+      "category": "FANTASY_CREATURES",
+      "clue": "Small mischievous demon",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_003_foe",
+      "answer": "FOE",
+      "length": 3,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "An enemy or adversary",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_004_fey",
+      "answer": "FEY",
+      "length": 3,
+      "category": "FANTASY_CREATURES",
+      "clue": "Otherworldly, magical being",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_005_axe",
+      "answer": "AXE",
+      "length": 3,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Chops wood or foes alike",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_006_bow",
+      "answer": "BOW",
+      "length": 3,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Fires arrows from a distance",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_007_den",
+      "answer": "DEN",
+      "length": 3,
+      "category": "DUNGEON_PLACES",
+      "clue": "A beast's hidden lair",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_008_pit",
+      "answer": "PIT",
+      "length": 3,
+      "category": "DUNGEON_PLACES",
+      "clue": "A deep hole, often trapped",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_009_fog",
+      "answer": "FOG",
+      "length": 3,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Thick mist that hides the path",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_010_ice",
+      "answer": "ICE",
+      "length": 3,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Frozen water underfoot",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_011_joy",
+      "answer": "JOY",
+      "length": 3,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Pure delight",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_012_awe",
+      "answer": "AWE",
+      "length": 3,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Wonder mixed with a little fear",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_013_ogre",
+      "answer": "OGRE",
+      "length": 4,
+      "category": "FANTASY_CREATURES",
+      "clue": "Hulking, dim-witted brute",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_014_wyrm",
+      "answer": "WYRM",
+      "length": 4,
+      "category": "FANTASY_CREATURES",
+      "clue": "An old word for a serpent-dragon",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_015_hero",
+      "answer": "HERO",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "One who answers the call to adventure",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_016_fool",
+      "answer": "FOOL",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "The jester, or one who acts rashly",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_017_mace",
+      "answer": "MACE",
+      "length": 4,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Blunt weapon with a heavy head",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_018_wand",
+      "answer": "WAND",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "A spellcaster's slender tool",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_019_rune",
+      "answer": "RUNE",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "Ancient magical letter-symbol",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_020_veil",
+      "answer": "VEIL",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "Mystical covering that hides the truth",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_021_cave",
+      "answer": "CAVE",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "A hollow beneath the mountain",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_022_lair",
+      "answer": "LAIR",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "A monster's home base",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_023_gate",
+      "answer": "GATE",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "The barred entrance to a keep",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_024_rain",
+      "answer": "RAIN",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Falls from storm clouds",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_025_wind",
+      "answer": "WIND",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Invisible force that howls through corridors",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_026_fire",
+      "answer": "FIRE",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Burns bright and spreads fast",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_027_fear",
+      "answer": "FEAR",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "What the dark inspires",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_028_hope",
+      "answer": "HOPE",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "What keeps adventurers going",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_029_ghoul",
+      "answer": "GHOUL",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Corpse-eating undead scavenger",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_030_troll",
+      "answer": "TROLL",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Regenerating cave-dwelling giant",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_031_witch",
+      "answer": "WITCH",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Practitioner of dark hexes",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_032_charm",
+      "answer": "CHARM",
+      "length": 5,
+      "category": "MAGIC_ARCANE",
+      "clue": "A small magical trinket or spell",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_033_sword",
+      "answer": "SWORD",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "A sharp synonym for blade",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_034_spear",
+      "answer": "SPEAR",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Long-shafted piercing weapon",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_035_crypt",
+      "answer": "CRYPT",
+      "length": 5,
+      "category": "DUNGEON_PLACES",
+      "clue": "A tomb beneath the chapel",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_036_tower",
+      "answer": "TOWER",
+      "length": 5,
+      "category": "DUNGEON_PLACES",
+      "clue": "Tall spire overlooking the dungeon",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_037_sewer",
+      "answer": "SEWER",
+      "length": 5,
+      "category": "DUNGEON_PLACES",
+      "clue": "Foul tunnel beneath the city",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_038_grave",
+      "answer": "GRAVE",
+      "length": 5,
+      "category": "DUNGEON_PLACES",
+      "clue": "Where the dead are laid to rest",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_039_storm",
+      "answer": "STORM",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Thunder, lightning, and driving rain",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_040_frost",
+      "answer": "FROST",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "A thin, cold coating of ice",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_041_flame",
+      "answer": "FLAME",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "A single tongue of fire",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_042_grief",
+      "answer": "GRIEF",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Deep sorrow after a loss",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_043_panic",
+      "answer": "PANIC",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Sudden overwhelming fear",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_044_pride",
+      "answer": "PRIDE",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Satisfaction in one's own deeds",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_045_goblin",
+      "answer": "GOBLIN",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Green dungeon pest that snickers at bad spelling",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_046_dragon",
+      "answer": "DRAGON",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Fire-breathing hoarder of treasure",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_047_spider",
+      "answer": "SPIDER",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Eight-legged ambusher spinning webs",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_048_wizard",
+      "answer": "WIZARD",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Casts spells one syllable at a time",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_049_potion",
+      "answer": "POTION",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Bubbling brew that restores HP",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_050_arcane",
+      "answer": "ARCANE",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Mysterious and known only to adepts",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_051_oracle",
+      "answer": "ORACLE",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "One who foretells the future",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_052_helmet",
+      "answer": "HELMET",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Protects the skull in battle",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_053_dagger",
+      "answer": "DAGGER",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Short blade favored by rogues",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_054_castle",
+      "answer": "CASTLE",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "Fortified home of nobility",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_055_cavern",
+      "answer": "CAVERN",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "A vast underground chamber",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_056_tunnel",
+      "answer": "TUNNEL",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "A narrow dug-out passage",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_057_breeze",
+      "answer": "BREEZE",
+      "length": 6,
+      "category": "NATURE_ELEMENTS",
+      "clue": "A gentle current of air",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_058_forest",
+      "answer": "FOREST",
+      "length": 6,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Dense woodland full of secrets",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_059_shadow",
+      "answer": "SHADOW",
+      "length": 6,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Darkness cast by something blocking the light",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_060_sorrow",
+      "answer": "SORROW",
+      "length": 6,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Lingering sadness",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_061_sorcery",
+      "answer": "SORCERY",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "The practice of dark magic",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_062_enchant",
+      "answer": "ENCHANT",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "To place under a magical spell",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_063_warding",
+      "answer": "WARDING",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "Protective magic that repels intruders",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_064_dungeon",
+      "answer": "DUNGEON",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "A network of monster-filled rooms",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_065_chamber",
+      "answer": "CHAMBER",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "An enclosed room within a larger complex",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_066_passage",
+      "answer": "PASSAGE",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "A corridor connecting two rooms",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_067_banshee",
+      "answer": "BANSHEE",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "Wailing spirit that foretells death",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_068_vampire",
+      "answer": "VAMPIRE",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "Undead noble that feeds at night",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_069_griffin",
+      "answer": "GRIFFIN",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "Part eagle, part lion, all majestic",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_070_halberd",
+      "answer": "HALBERD",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Polearm combining axe and spear",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_071_tempest",
+      "answer": "TEMPEST",
+      "length": 7,
+      "category": "NATURE_ELEMENTS",
+      "clue": "A violent, windy storm",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_072_moonlit",
+      "answer": "MOONLIT",
+      "length": 7,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Illuminated by the night sky's glow",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_073_sadness",
+      "answer": "SADNESS",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "The feeling after a hard loss",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_074_triumph",
+      "answer": "TRIUMPH",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "The joy of a hard-won victory",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_075_anguish",
+      "answer": "ANGUISH",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Severe mental or physical pain",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_076_gargoyle",
+      "answer": "GARGOYLE",
+      "length": 8,
+      "category": "FANTASY_CREATURES",
+      "clue": "Stone guardian that comes alive at night",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_077_skeleton",
+      "answer": "SKELETON",
+      "length": 8,
+      "category": "FANTASY_CREATURES",
+      "clue": "Animated bones marching to war",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_078_werewolf",
+      "answer": "WEREWOLF",
+      "length": 8,
+      "category": "FANTASY_CREATURES",
+      "clue": "Cursed to become a wolf by moonlight",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_079_phantasm",
+      "answer": "PHANTASM",
+      "length": 8,
+      "category": "FANTASY_CREATURES",
+      "clue": "A ghostly illusion given form",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_080_grimoire",
+      "answer": "GRIMOIRE",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "A spellbook bound in strange leather",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_081_talisman",
+      "answer": "TALISMAN",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "A charm believed to grant magical protection",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_082_crossbow",
+      "answer": "CROSSBOW",
+      "length": 8,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Mechanical bow that fires bolts",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_083_gauntlet",
+      "answer": "GAUNTLET",
+      "length": 8,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Armored glove worn into battle",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_084_fortress",
+      "answer": "FORTRESS",
+      "length": 8,
+      "category": "DUNGEON_PLACES",
+      "clue": "A heavily defended stronghold",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_085_stairway",
+      "answer": "STAIRWAY",
+      "length": 8,
+      "category": "DUNGEON_PLACES",
+      "clue": "Steps leading to the next level down",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_086_catacomb",
+      "answer": "CATACOMB",
+      "length": 8,
+      "category": "DUNGEON_PLACES",
+      "clue": "Underground burial tunnels",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_087_twilight",
+      "answer": "TWILIGHT",
+      "length": 8,
+      "category": "NATURE_ELEMENTS",
+      "clue": "The dim light between day and night",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_088_darkness",
+      "answer": "DARKNESS",
+      "length": 8,
+      "category": "NATURE_ELEMENTS",
+      "clue": "The absence of all light",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_089_jealousy",
+      "answer": "JEALOUSY",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Envy of another's fortune",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_090_leviathan",
+      "answer": "LEVIATHAN",
+      "length": 9,
+      "category": "FANTASY_CREATURES",
+      "clue": "Colossal sea monster of legend",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_091_enchanter",
+      "answer": "ENCHANTER",
+      "length": 9,
+      "category": "MAGIC_ARCANE",
+      "clue": "One who casts enchantments for a living",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_092_spellbook",
+      "answer": "SPELLBOOK",
+      "length": 9,
+      "category": "MAGIC_ARCANE",
+      "clue": "Where a mage keeps their incantations",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_093_warhammer",
+      "answer": "WARHAMMER",
+      "length": 9,
+      "category": "WEAPONS_ARMOR",
+      "clue": "A massive two-handed crushing weapon",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_094_labyrinth",
+      "answer": "LABYRINTH",
+      "length": 9,
+      "category": "DUNGEON_PLACES",
+      "clue": "A maze designed to trap intruders",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_095_sanctuary",
+      "answer": "SANCTUARY",
+      "length": 9,
+      "category": "DUNGEON_PLACES",
+      "clue": "A safe room shielded from harm",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_096_graveyard",
+      "answer": "GRAVEYARD",
+      "length": 9,
+      "category": "DUNGEON_PLACES",
+      "clue": "Where headstones mark the fallen",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_097_lightning",
+      "answer": "LIGHTNING",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "A sudden violent flash from the storm",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_098_avalanche",
+      "answer": "AVALANCHE",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "A mountainside suddenly giving way",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_099_whirlwind",
+      "answer": "WHIRLWIND",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "A spinning column of violent air",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_100_heartache",
+      "answer": "HEARTACHE",
+      "length": 9,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Emotional pain from loss or longing",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_101_nightmare",
+      "answer": "NIGHTMARE",
+      "length": 9,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "A dream that turns to terror",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_102_bloodlust",
+      "answer": "BLOODLUST",
+      "length": 9,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "An overwhelming thirst for battle",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_103_underworld",
+      "answer": "UNDERWORLD",
+      "length": 10,
+      "category": "DUNGEON_PLACES",
+      "clue": "The realm said to lie beneath the living world",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_104_gravestone",
+      "answer": "GRAVESTONE",
+      "length": 10,
+      "category": "DUNGEON_PLACES",
+      "clue": "Marks where the dead were buried",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_105_drawbridge",
+      "answer": "DRAWBRIDGE",
+      "length": 10,
+      "category": "DUNGEON_PLACES",
+      "clue": "Raises to seal off the castle gate",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_106_watchtower",
+      "answer": "WATCHTOWER",
+      "length": 10,
+      "category": "DUNGEON_PLACES",
+      "clue": "A lookout post scanning for danger",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_107_stalactite",
+      "answer": "STALACTITE",
+      "length": 10,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Mineral spike hanging from a cave ceiling",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_108_wilderness",
+      "answer": "WILDERNESS",
+      "length": 10,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Untamed land beyond the dungeon's walls",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_109_nightshade",
+      "answer": "NIGHTSHADE",
+      "length": 10,
+      "category": "NATURE_ELEMENTS",
+      "clue": "A poisonous plant favored by alchemists",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_110_overgrowth",
+      "answer": "OVERGROWTH",
+      "length": 10,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Vegetation reclaiming an abandoned ruin",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_111_broadsword",
+      "answer": "BROADSWORD",
+      "length": 10,
+      "category": "WEAPONS_ARMOR",
+      "clue": "A wide-bladed two-handed sword",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_112_ironshield",
+      "answer": "IRONSHIELD",
+      "length": 10,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Sturdy metal-bound defensive gear",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_113_enchanting",
+      "answer": "ENCHANTING",
+      "length": 10,
+      "category": "MAGIC_ARCANE",
+      "clue": "The act of imbuing an item with magic",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_114_bloodhound",
+      "answer": "BLOODHOUND",
+      "length": 10,
+      "category": "FANTASY_CREATURES",
+      "clue": "Keen-nosed beast that tracks by scent",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_115_terrifying",
+      "answer": "TERRIFYING",
+      "length": 10,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Causing great fear",
+      "difficulty": 3
+    }
+  ]
+}
