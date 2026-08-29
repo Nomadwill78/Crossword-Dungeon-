@@ -9,7 +9,10 @@
 ## almost immediately in testing (a handful of short intersecting slots need
 ## mutual consistency that a ~100-word clue bank essentially never satisfies
 ## — the classic "word square" trap). Growing the grid outward from a seed
-## word, one intersection at a time, sidesteps that entirely.
+## word, one intersection at a time, sidesteps that entirely. This is a
+## deliberate deviation from the Technical Design Doc's specified algorithm
+## (section 3.1) — see docs/adr/001-incremental-growth-vs-backtracking-grid-generation.md
+## for the full writeup and the numbers behind the decision.
 class_name GridGenerator
 extends RefCounted
 

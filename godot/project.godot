@@ -16,11 +16,11 @@ config/features=PackedStringArray("4.3", "GL Compatibility")
 
 [autoload]
 
-ConfigLoader="*res://src/autoload/ConfigLoader.gd"
 EventBus="*res://src/autoload/EventBus.gd"
 GameState="*res://src/autoload/GameState.gd"
 SaveManager="*res://src/autoload/SaveManager.gd"
-AssetRegistry="*res://src/autoload/AssetRegistry.gd"
+AudioManager="*res://src/autoload/AudioManager.gd"
+ConfigLoader="*res://src/autoload/ConfigLoader.gd"
 
 [rendering]
 

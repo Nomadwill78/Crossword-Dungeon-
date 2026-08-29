@@ -19,10 +19,34 @@ var player_profile: Dictionary = {
 	"unlocked_word_count": 0,
 }
 
+## Shape matches the Technical Design Doc's settings schema (docs/design/
+## technical_design_document.md, section 2.1).
 var settings: Dictionary = {
-	"music_volume": 0.8,
-	"sfx_volume": 0.8,
-	"difficulty": "standard",
+	"audio": {
+		"master_volume": 0.8,
+		"music_volume": 0.6,
+		"sfx_volume": 0.9,
+	},
+	"display": {
+		"fullscreen": false,
+		"grid_theme": "default",
+		"colorblind_mode": "none",
+		"dyslexia_font": false,
+		"text_size": "medium",
+	},
+	"gameplay": {
+		"difficulty": "standard",
+		"timer_visible": true,
+		"hint_enabled": true,
+		"auto_save": true,
+		"auto_save_interval_seconds": 60,
+	},
+	"accessibility": {
+		"screen_reader": false,
+		"high_contrast": false,
+		"reduced_motion": false,
+		"extended_timer": false,
+	},
 }
 
 var statistics: Dictionary = {
