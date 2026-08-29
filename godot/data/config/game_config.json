@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "grid": {
     "supported_sizes": [5, 7, 9],
     "default_size": 5,
@@ -13,32 +13,46 @@
     "starting_dictionary_fragments": 0
   },
   "combat": {
-    "base_damage_per_letter": 5,
-    "length_bonus_thresholds": [
-      { "min_length": 7, "multiplier": 2.0 },
-      { "min_length": 5, "multiplier": 1.5 },
-      { "min_length": 0, "multiplier": 1.0 }
-    ],
-    "combo_streak_bonus_per_hit": 0.15,
-    "max_combo_multiplier": 2.5,
-    "miss_penalty_hp_percent": 0.08
+    "_note": "Damage formula per Technical Design Doc section 3.2. Multipliers apply in this order: base-by-length -> difficulty -> first-attempt -> time -> vocabulary category -> tome -> enemy weakness/resistance.",
+    "base_damage_by_length": { "1": 10, "2": 8, "3": 6, "4": 5, "5": 4, "6": 3, "7": 3, "8": 3, "default": 2 },
+    "difficulty_bonus_per_level": 0.1,
+    "first_attempt_multiplier": 1.25,
+    "time_bonus_scale": 0.5,
+    "time_bonus_min": 1.0,
+    "time_bonus_max": 2.0,
+    "max_attempts": 3
+  },
+  "timer": {
+    "_note": "Base seconds per clue difficulty, per Technical Design Doc section 3.2 TimerSystem._calculate_max_time.",
+    "base_seconds_by_difficulty": { "1": 45, "2": 40, "3": 30, "4": 25, "5": 20 },
+    "default_seconds": 30,
+    "warning_thresholds": [0.5, 0.25, 0.1],
+    "accessibility_extended_multiplier": 1.5
   },
   "chains": {
-    "min_chain_length": 2,
-    "chain_bonus_multiplier": 1.5,
-    "chain_window_seconds": 6.0
+    "_note": "Chain effect tiers per Design Doc section 4.3. A chain is a run of solved letters that spells a dictionary word.",
+    "min_chain_length": 3,
+    "tiers": [
+      { "min_length": 8, "effect": "clear_line", "magnitude": 1, "description": "Ultimate - clear an entire row or column of unsolved letters" },
+      { "min_length": 7, "effect": "double_rewards", "magnitude": 2.0, "description": "Double rewards on the next encounter" },
+      { "min_length": 6, "effect": "skip_encounter", "magnitude": 1, "description": "Auto-solve one encounter" },
+      { "min_length": 5, "effect": "reveal_letter", "magnitude": 1, "description": "Reveal one random unsolved letter on the grid" },
+      { "min_length": 4, "effect": "heal", "magnitude": 0.15, "description": "Heal 15% of max HP" },
+      { "min_length": 3, "effect": "damage_buff", "magnitude": 0.2, "duration_encounters": 3, "description": "+20% damage for the next 3 encounters" }
+    ]
   },
   "ink_economy": {
     "ink_per_letter": 2,
     "ink_bonus_length_7_plus": 5,
+    "ink_per_chain": 20,
     "dictionary_fragment_drop_chance": 0.1,
     "dictionary_fragments_to_unlock_word": 5
   },
   "difficulty_scaling": {
-    "depth_hp_multiplier": 0.15,
-    "depth_attack_multiplier": 0.1,
-    "boss_hp_multiplier": 1.0,
-    "boss_attack_multiplier": 1.0
+    "_note": "Design Doc 4.4: base HP = 20 + (depth * 5) + (grid_size * 2); base damage = 5 + (depth * 2). hp_per_grid_size covers the grid-size term the per-enemy scaling block does not.",
+    "hp_per_depth": 5,
+    "hp_per_grid_size": 2,
+    "damage_per_depth": 2
   },
   "save": {
     "save_path": "user://save_data.json",

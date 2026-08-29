@@ -144,21 +144,69 @@ func solve_cell(cell_pos: Vector2i, answer: String) -> bool:
 	for i in range(length):
 		var cx: int = sx + i if dir == "across" else sx
 		var cy: int = sy if dir == "across" else sy + i
-		var pos := Vector2i(cx, cy)
-		var c := _cell_at(pos)
-		if c.is_empty() or c.type != "letter":
-			continue
-		c.solved = true
-		c.enemy_id = ""
-		EventBus.letter_solved.emit(pos, c.letter, ink_per_letter)
+		_mark_solved(Vector2i(cx, cy), ink_per_letter)
 
 	EventBus.word_solved.emit(String(slot.id), String(slot.answer), ink_per_letter * length)
+	_check_completion()
+	return true
 
+## Reveals one random unsolved letter cell, the reward for a 5-letter
+## Vocabulary Chain (Design Doc 4.3).
+## Returns the revealed cell, or (-1, -1) if nothing was left to reveal.
+func reveal_random_unsolved_cell() -> Vector2i:
+	var candidates: Array[Vector2i] = []
+	for cell in _grid_state.cells:
+		if cell.type == "letter" and not bool(cell.solved):
+			candidates.append(Vector2i(int(cell.x), int(cell.y)))
+	if candidates.is_empty():
+		return Vector2i(-1, -1)
+
+	var pos: Vector2i = candidates[randi() % candidates.size()]
+	_mark_solved(pos, _ink_per_letter())
+	_check_completion()
+	return pos
+
+## Clears every unsolved letter in one row or column - the 8+ letter chain
+## "Ultimate" (Design Doc 4.3). Returns how many cells were cleared.
+func clear_unsolved_in_line(line_index: int, direction: String) -> int:
+	var ink := _ink_per_letter()
+	var cleared := 0
+	for i in range(_size):
+		var pos := Vector2i(i, line_index) if direction == "horizontal" else Vector2i(line_index, i)
+		var cell := _cell_at(pos)
+		if cell.is_empty() or cell.type != "letter" or bool(cell.solved):
+			continue
+		_mark_solved(pos, ink)
+		cleared += 1
+	if cleared > 0:
+		_check_completion()
+	return cleared
+
+## Number of letter cells still unsolved. Used to tell "grid finished" from
+## "player walked to the exit early".
+func unsolved_letter_count() -> int:
+	var count := 0
+	for cell in _grid_state.cells:
+		if cell.type == "letter" and not bool(cell.solved):
+			count += 1
+	return count
+
+func _mark_solved(pos: Vector2i, ink_per_letter: int) -> void:
+	var cell := _cell_at(pos)
+	if cell.is_empty() or cell.type != "letter" or bool(cell.solved):
+		return
+	cell.solved = true
+	cell.enemy_id = ""
+	EventBus.letter_solved.emit(pos, cell.letter, ink_per_letter)
+
+func _check_completion() -> void:
 	if _all_letters_solved():
 		var elapsed := (Time.get_ticks_msec() - _start_time_msec) / 1000.0
 		EventBus.grid_completed.emit(_score(), elapsed)
 
-	return true
+func _ink_per_letter() -> int:
+	var config: Dictionary = ConfigLoader.load_json(Constants.GAME_CONFIG_PATH)
+	return int(config.get("ink_economy", {}).get("ink_per_letter", 2))
 
 func _all_letters_solved() -> bool:
 	for cell in _grid_state.cells:

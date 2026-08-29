@@ -1,20 +1,27 @@
-# Wordsmith's Gambit — Godot Prototype (Milestone 1)
+# Wordsmith's Gambit — Godot Prototype (Milestones 1-2)
 
 A Godot 4.3 implementation of the same core concept as the browser build at
 the repo root: a procedurally generated crossword grid that doubles as a
-dungeon map. This milestone covers grid generation, navigation, and
-rendering, with combat auto-resolved for demonstration purposes (real
-combat UI is Milestone 2).
+dungeon map.
+
+* **Milestone 1** — grid generation, navigation, rendering.
+* **Milestone 2** — the Word Duel: combat UI, clue input, countdown timer,
+  the full damage formula, and Vocabulary Chains.
 
 ## Running it
 
 Open `godot/` as a project in Godot 4.3+, or headless:
 
 ```
-godot --headless --path godot/ tests/unit/TestRunner.tscn   # unit tests
+godot --headless --path godot/ tests/unit/TestRunner.tscn   # unit tests + perf benchmarks
 godot --headless --path godot/ tests/bots/BotRunner.tscn    # 100-run soft-lock/crash bot
 godot --path godot/                                          # play it (main menu -> Start Demo)
 ```
+
+Walk into an unsolved letter with the arrow keys to start a Word Duel: type
+the answer before the clock runs out. A correct answer damages the enemy
+(faster and first-try hits harder); a wrong one costs HP and an attempt.
+Solving a word that spells a dictionary word triggers a Vocabulary Chain.
 
 Also runnable with no Godot binary at all, against the same data files and
 the same fill algorithm (kept in sync by hand — see the note at the top of
@@ -40,6 +47,31 @@ test/bot logic itself. Use those two scenes, not `--script`, to actually run
 them.
 
 ## Architecture
+
+### Combat (Milestone 2)
+
+- `src/core/combat/CombatStateMachine.gd` — drives one encounter through
+  reveal / input / validate / damage / resolution. Synchronous and
+  `RefCounted`, so tests and the playtest bot drive it headlessly without a
+  SceneTree; see the note in its header for why that differs from the
+  CLAUDE.md 4.2 sketch.
+- `src/core/combat/CombatEngine.gd` — the damage formula from Technical
+  Design Doc 3.2, every multiplier data-driven from `game_config.json`.
+- `src/core/combat/ClueResolver.gd` — answer normalization and validation.
+- `src/core/combat/TimerSystem.gd` — the countdown, built on Timer nodes
+  rather than the spec's `_process` loop (CLAUDE.md 2.5 forbids `_process`
+  for game logic, and the sketched per-frame ratio check can miss warnings
+  on a frame hitch). Header explains the tradeoff.
+- `src/core/combo/ChainDetector.gd` — finds runs of solved letters that
+  spell dictionary words; `ChainEffects.gd` pays out the tiered rewards
+  from Design Doc 4.3.
+- `src/scenes/combat/CombatScene.gd` — the Word Duel UI. Presentation and
+  input only; all encounter logic lives in the state machine.
+- `src/utils/ClueDatabase.gd` / `EnemyDatabase.gd` — typed data-access
+  wrappers (CLAUDE.md 4.3) with fallbacks, so a bad id degrades instead of
+  crashing a run.
+
+### Grid (Milestone 1)
 
 - `src/core/grid/GridGenerator.gd` — builds one grid by growing outward from
   a seed word, greedily placing each subsequent candidate word at its
@@ -67,9 +99,32 @@ them.
 - `data/` — `clues/clues_master.json` (115 clues, 6 categories, lengths
   3-10), `config/grid_presets.json` (6 size/density presets),
   `config/game_config.json` (balance constants), `enemies/enemies_master.json`
-  (5 enemies + 1 boss).
+  (5 enemies + 1 boss), `dictionaries/words_en.json` (16,360 words for
+  chain validation).
 
-## Known scope
+## Known scope and deliberate gaps
 
-Milestone 1 only. No combat UI, meta-progression, or persistence UI yet —
-see the root README's roadmap section for what's next across both builds.
+Everything below is a conscious gap, not an oversight:
+
+- **The boss fight does not exist yet.** Design Doc 4.2's loop is "fill the
+  grid -> boss encounter", so The Thesaurus is a fight *after* the grid, not
+  a cell in it. `grid_state.final_word_clue_ids` records which word gated
+  the exit, ready for that encounter to be built.
+- **Three enemies ship with `weakness: null`.** Homophone, Acronym and
+  Portmanteau each have a Design Doc weakness that depends on data or a
+  system that does not exist yet (homophone-tagged clues, abbreviation-style
+  answers, compound-word tagging). Each carries a `weakness_pending` field
+  saying exactly what it is waiting on. Encoding a guess would have meant a
+  weakness that silently never fires, or one that fires on every hit.
+- **The Thesaurus's synonym rule is inert** for the same reason:
+  ClueResolver accepts exact matches only, so "synonyms deal 50%" has
+  nothing to act on.
+- **Enemy special abilities are data, not behaviour.** Every enemy has its
+  ability defined with an unlock depth; nothing invokes them yet.
+- **No meta-progression.** The vocabulary-tree and tome damage multipliers
+  are read from `player_state` and default to 1.0 until Milestone 3
+  populates them.
+- **Chain dictionary is ~16k common words**, not the 100k+ Technical Design
+  Doc 3.3 targets. A curated list avoids chains firing on obscure junk, and
+  it is a superset of every clue answer (a test enforces that). Swapping in
+  a bigger list is a one-file change.

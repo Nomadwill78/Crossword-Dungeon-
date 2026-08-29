@@ -1,68 +1,180 @@
 {
-  "version": 1,
+  "version": 2,
+  "_schema_notes": {
+    "roster": "Enemy types and weaknesses follow Design Doc section 4.4. Schema follows Technical Design Doc section 2.3.",
+    "scaling": "Design Doc 4.4: base HP = 20 + (depth * 5) + (grid_size * 2); base damage = 5 + (depth * 2). base_hp/base_damage below are the depth-0 baselines; GridGenerator/CombatEngine apply the per-depth and per-size terms.",
+    "asset_keys": "visual/audio carry LOGICAL keys, not file paths, so lookups go through AssetRegistry (CLAUDE.md 2.3). No art or audio exists yet; missing keys degrade to placeholder + warning.",
+    "weakness_pending": "Three enemies have weakness: null because the Design Doc weakness they are supposed to have depends on a system that does not exist yet (see each weakness_pending field). A null weakness simply never triggers a bonus multiplier; it is not a silent no-op bug."
+  },
   "enemies": [
     {
-      "id": "enemy_ink_wretch",
-      "name": "Ink Wretch",
-      "is_boss": false,
-      "hp": 12,
-      "attack": 3,
-      "weak_to_category": "MAGIC_ARCANE",
-      "abilities": ["Smudge: blurs one letter hint for a turn"],
-      "description": "A small stain of spilled ink given restless life."
+      "id": "enemy_anagram_01",
+      "name": "The Anagram",
+      "display_name": "Anagram",
+      "description": "A shapeshifting creature that scrambles the letters of solved words.",
+      "enemy_type": "anagram",
+      "tier": 1,
+      "base_hp": 20,
+      "base_damage": 5,
+      "attack_pattern": "scramble",
+      "special_ability": {
+        "name": "Letter Swap",
+        "description": "Swaps 2 random solved letters on the grid",
+        "trigger_condition": "player_takes_damage",
+        "cooldown_turns": 3,
+        "unlock_depth": 3,
+        "effect": { "type": "grid_manipulation", "swap_count": 2, "target": "solved_letters" }
+      },
+      "weakness": {
+        "type": "word_property",
+        "property": "double_letter",
+        "description": "Words with double letters deal +50% damage",
+        "bonus_multiplier": 1.5
+      },
+      "resistance": {
+        "type": "word_property",
+        "property": "single_letter",
+        "description": "Single-letter words deal -25% damage",
+        "penalty_multiplier": 0.75
+      },
+      "visual": { "portrait_key": "enemy_anagram", "color_theme": "#8B4513" },
+      "audio": { "spawn_key": "sfx_anagram_spawn", "attack_key": "sfx_anagram_attack", "defeat_key": "sfx_anagram_defeat" },
+      "scaling": { "hp_per_depth": 5, "damage_per_depth": 2 },
+      "flavor_text": "It speaks in tongues - all of them at once, and none of them correctly."
     },
     {
-      "id": "enemy_syllable_wisp",
-      "name": "Syllable Wisp",
-      "is_boss": false,
-      "hp": 16,
-      "attack": 4,
-      "weak_to_category": "NATURE_ELEMENTS",
-      "abilities": ["Echo: repeats your last word, breaking your combo streak"],
-      "description": "A flickering light that mimics whatever it last heard spoken."
+      "id": "enemy_palindrome_01",
+      "name": "The Palindrome",
+      "display_name": "Palindrome",
+      "description": "A mirrored horror that reads the same coming and going.",
+      "enemy_type": "palindrome",
+      "tier": 1,
+      "base_hp": 22,
+      "base_damage": 5,
+      "attack_pattern": "reverse",
+      "special_ability": {
+        "name": "Mirror Input",
+        "description": "Reverses the player's submitted answer before validating it",
+        "trigger_condition": "on_attempt",
+        "cooldown_turns": 4,
+        "unlock_depth": 3,
+        "effect": { "type": "input_manipulation", "target": "player_answer" }
+      },
+      "weakness": {
+        "type": "word_property",
+        "property": "palindrome",
+        "description": "Palindromic answers (RADAR, LEVEL) deal +50% damage",
+        "bonus_multiplier": 1.5
+      },
+      "resistance": null,
+      "visual": { "portrait_key": "enemy_palindrome", "color_theme": "#4A6FA5" },
+      "audio": { "spawn_key": "sfx_palindrome_spawn", "attack_key": "sfx_palindrome_attack", "defeat_key": "sfx_palindrome_defeat" },
+      "scaling": { "hp_per_depth": 5, "damage_per_depth": 2 },
+      "flavor_text": "Was it a car or a cat I saw?"
     },
     {
-      "id": "enemy_anagram_shade",
-      "name": "Anagram Shade",
-      "is_boss": false,
-      "hp": 18,
-      "attack": 5,
-      "weak_to_category": "WEAPONS_ARMOR",
-      "abilities": ["Scramble: shuffles your letter rack"],
-      "description": "A shifting shadow that never holds the same shape twice."
+      "id": "enemy_homophone_01",
+      "name": "The Homophone",
+      "display_name": "Homophone",
+      "description": "It sounds exactly like something you already know, and means nothing of the sort.",
+      "enemy_type": "homophone",
+      "tier": 2,
+      "base_hp": 24,
+      "base_damage": 6,
+      "attack_pattern": "sound_alike",
+      "special_ability": {
+        "name": "Mishearing",
+        "description": "Presents a clue whose answer has a same-sounding alternative",
+        "trigger_condition": "on_clue_reveal",
+        "cooldown_turns": 3,
+        "unlock_depth": 6,
+        "effect": { "type": "clue_manipulation", "target": "clue_text" }
+      },
+      "weakness": null,
+      "weakness_pending": "Design Doc 4.4 gives this enemy the weakness 'context clues'. That is not a property of the answer word, so it cannot be computed from the answer alone - it needs homophone-tagged clue data (clues_master has no homophone field yet). Left null rather than substituting an invented word property.",
+      "resistance": null,
+      "visual": { "portrait_key": "enemy_homophone", "color_theme": "#6B8E5A" },
+      "audio": { "spawn_key": "sfx_homophone_spawn", "attack_key": "sfx_homophone_attack", "defeat_key": "sfx_homophone_defeat" },
+      "scaling": { "hp_per_depth": 5, "damage_per_depth": 2 },
+      "flavor_text": "It said its piece. Or perhaps its peace. You will never be sure."
     },
     {
-      "id": "enemy_punctuation_fiend",
-      "name": "Punctuation Fiend",
-      "is_boss": false,
-      "hp": 20,
-      "attack": 4,
-      "weak_to_category": "DUNGEON_PLACES",
-      "abilities": ["Interrupt: cuts your next submitted word short by one letter"],
-      "description": "A jagged little pest that delights in cutting sentences off."
+      "id": "enemy_acronym_01",
+      "name": "The Acronym",
+      "display_name": "Acronym",
+      "description": "A creature of initials, impatient with anyone who spells things out.",
+      "enemy_type": "acronym",
+      "tier": 2,
+      "base_hp": 26,
+      "base_damage": 6,
+      "attack_pattern": "shorten_timer",
+      "special_ability": {
+        "name": "Abbreviate",
+        "description": "Halves the remaining time on the clue timer",
+        "trigger_condition": "on_attempt_failed",
+        "cooldown_turns": 4,
+        "unlock_depth": 6,
+        "effect": { "type": "timer_manipulation", "multiplier": 0.5 }
+      },
+      "weakness": null,
+      "weakness_pending": "Design Doc 4.4 gives this enemy the weakness 'full-word answers'. Every answer in clues_master is currently a full word, so implementing this now would multiply damage by 1.5x on literally every hit - an always-on buff, not a weakness. Needs abbreviation-style answers to exist before it means anything.",
+      "resistance": null,
+      "visual": { "portrait_key": "enemy_acronym", "color_theme": "#A5734A" },
+      "audio": { "spawn_key": "sfx_acronym_spawn", "attack_key": "sfx_acronym_attack", "defeat_key": "sfx_acronym_defeat" },
+      "scaling": { "hp_per_depth": 5, "damage_per_depth": 2 },
+      "flavor_text": "T.L.D.R., it hisses, and takes another five seconds from you."
     },
     {
-      "id": "enemy_grammar_golem",
-      "name": "Grammar Golem",
-      "is_boss": false,
-      "hp": 24,
-      "attack": 5,
-      "weak_to_category": "EMOTIONS_ABSTRACT",
-      "abilities": ["Stone Sentence: hardens for a turn, +50% defense"],
-      "description": "A hulking construct built from misused modifiers."
-    },
+      "id": "enemy_portmanteau_01",
+      "name": "The Portmanteau",
+      "display_name": "Portmanteau",
+      "description": "Two words fused at the seam, and angry about it.",
+      "enemy_type": "portmanteau",
+      "tier": 3,
+      "base_hp": 30,
+      "base_damage": 7,
+      "attack_pattern": "merge_clues",
+      "special_ability": {
+        "name": "Blend",
+        "description": "Merges two clues into a single ambiguous prompt",
+        "trigger_condition": "on_clue_reveal",
+        "cooldown_turns": 5,
+        "unlock_depth": 10,
+        "effect": { "type": "clue_manipulation", "clue_count": 2 }
+      },
+      "weakness": null,
+      "weakness_pending": "Design Doc 4.4 gives this enemy the weakness 'compound answers'. Detecting a compound word needs either a compound-word list or a morphology check; clues_master has no compound flag. Left null rather than guessing with a heuristic that would misfire.",
+      "resistance": null,
+      "visual": { "portrait_key": "enemy_portmanteau", "color_theme": "#7A5A8E" },
+      "audio": { "spawn_key": "sfx_portmanteau_spawn", "attack_key": "sfx_portmanteau_attack", "defeat_key": "sfx_portmanteau_defeat" },
+      "scaling": { "hp_per_depth": 5, "damage_per_depth": 2 },
+      "flavor_text": "It is not one thing. It is not two things. It is furious about the distinction."
+    }
+  ],
+  "bosses": [
     {
-      "id": "boss_lexicon_warden",
-      "name": "The Lexicon Warden",
+      "id": "boss_thesaurus",
+      "name": "The Thesaurus",
+      "display_name": "The Thesaurus",
+      "description": "The guardian of all words. It knows every synonym, antonym, and obscure variant.",
+      "enemy_type": "thesaurus",
+      "tier": 5,
       "is_boss": true,
-      "hp": 70,
-      "attack": 8,
-      "weak_to_category": "MAGIC_ARCANE",
-      "abilities": [
-        "Tome Slam: heavy attack, +50% damage",
-        "Word Ban: forbids one letter from being played for a turn"
+      "base_hp": 200,
+      "base_damage": 20,
+      "attack_pattern": "synonym_shift",
+      "phases": [
+        { "phase": 1, "hp_threshold": 1.0, "ability": "synonym_swap", "description": "Changes the clue to a synonym mid-fight" },
+        { "phase": 2, "hp_threshold": 0.5, "ability": "antonym_inversion", "description": "Reverses the meaning of the clue" },
+        { "phase": 3, "hp_threshold": 0.25, "ability": "obscure_variant", "description": "Demands archaic or rare spellings" }
       ],
-      "description": "Ancient guardian of the vault's final word, bound to defend it to the last letter."
+      "weakness": null,
+      "weakness_pending": "Design Doc 4.4 / TDD 2.3 give this boss 'only exact-match answers deal full damage; synonyms deal 50%'. The answer validator currently accepts exact matches ONLY, so the synonym half of that rule can never fire and the exact-match half would be an always-on 1.0x no-op. Becomes meaningful once ClueResolver accepts synonyms.",
+      "resistance": null,
+      "visual": { "portrait_key": "boss_thesaurus", "color_theme": "#B08D57" },
+      "audio": { "spawn_key": "sfx_thesaurus_spawn", "attack_key": "sfx_thesaurus_attack", "defeat_key": "sfx_thesaurus_defeat" },
+      "scaling": { "hp_per_depth": 10, "damage_per_depth": 3 },
+      "flavor_text": "It has a word for what you are about to become. Several, in fact."
     }
   ]
 }

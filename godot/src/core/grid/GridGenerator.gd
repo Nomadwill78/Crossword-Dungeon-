@@ -219,20 +219,24 @@ func _finalize_grid(size: int, cells: Dictionary, placements: Array, dungeon_dep
 	var entrance_pos := Vector2i(entrance_placement.x, entrance_placement.y)
 	var exit_pos := _bfs_farthest(cells, entrance_pos)
 
-	var boss_clue_ids: Dictionary = {}
+	# The word containing the exit is the grid's final word. It is recorded so
+	# the (not yet built) end-of-grid boss fight knows which word gated the
+	# exit - it does NOT put a boss on those cells.
+	#
+	# Milestone 1 did assign the boss enemy to this word's cells, which was an
+	# invented mechanic: Design Doc 4.2's loop is "fill the grid -> boss
+	# encounter", so the boss is a separate fight after the grid, not a cell in
+	# it. That mistake was invisible while combat auto-resolved; once damage
+	# became real in Milestone 2 it put a 220 HP / 23 damage boss on ordinary
+	# depth-1 cells and killed even a player answering everything correctly.
+	var final_word_clue_ids: Dictionary = {}
 	for p in placements:
 		if _placement_contains(p, exit_pos):
-			boss_clue_ids[p.clue.id] = true
+			final_word_clue_ids[p.clue.id] = true
 
-	var enemies_data: Dictionary = ConfigLoader.load_json(Constants.ENEMIES_PATH)
-	var all_enemies: Array = enemies_data.get("enemies", [])
-	var regular_enemies: Array = []
-	var boss_enemy: Dictionary = {}
-	for e in all_enemies:
-		if bool(e.get("is_boss", false)):
-			boss_enemy = e
-		else:
-			regular_enemies.append(e)
+	# enemies_master.json keeps bosses in their own array; EnemyDatabase
+	# flattens that so we only deal in ids here.
+	var regular_enemies: Array[String] = EnemyDatabase.get_regular_ids()
 
 	var cell_primary_clue: Dictionary = {}   # Vector2i -> clue_id
 	var words_across: Array = []
@@ -290,11 +294,11 @@ func _finalize_grid(size: int, cells: Dictionary, placements: Array, dungeon_dep
 				})
 				continue
 
+			# Every in-grid cell gets a regular enemy; see the note above on
+			# why the boss is not placed here.
 			var enemy_id := ""
-			if boss_clue_ids.has(clue_id) and not boss_enemy.is_empty():
-				enemy_id = boss_enemy.id
-			elif not regular_enemies.is_empty():
-				enemy_id = regular_enemies[enemy_counter % regular_enemies.size()].id
+			if not regular_enemies.is_empty():
+				enemy_id = regular_enemies[enemy_counter % regular_enemies.size()]
 				enemy_counter += 1
 
 			var bonus = null
@@ -314,7 +318,7 @@ func _finalize_grid(size: int, cells: Dictionary, placements: Array, dungeon_dep
 		"difficulty_rating": _difficulty_rating(size, placements.size(), difficulty),
 		"entrance": {"x": entrance_pos.x, "y": entrance_pos.y},
 		"exit": {"x": exit_pos.x, "y": exit_pos.y},
-		"boss_clue_ids": boss_clue_ids.keys(),
+		"final_word_clue_ids": final_word_clue_ids.keys(),
 		"dungeon_depth": dungeon_depth,
 	}
 
@@ -372,6 +376,11 @@ func _generate_fallback_grid(size: int) -> Dictionary:
 	if fallback_word == "":
 		fallback_word = "A".repeat(size)
 
+	# Never hardcode an enemy id here - the roster is data, and a stale id
+	# would put an unresolvable enemy on every cell of the fallback grid.
+	var regular_ids: Array[String] = EnemyDatabase.get_regular_ids()
+	var fallback_enemy_id: String = regular_ids[0] if not regular_ids.is_empty() else ""
+
 	var out_cells: Array = []
 	var words_across: Array = []
 	var entrance_pos := Vector2i(0, 0)
@@ -395,7 +404,7 @@ func _generate_fallback_grid(size: int) -> Dictionary:
 			else:
 				out_cells.append({
 					"x": x, "y": y, "type": "letter", "letter": letter, "solved": false,
-					"enemy_id": "enemy_ink_wretch", "clue_id": fallback_clue_id,
+					"enemy_id": fallback_enemy_id, "clue_id": fallback_clue_id,
 					"bonus": null, "bonus_claimed": false,
 				})
 		words_across.append({
@@ -416,7 +425,7 @@ func _generate_fallback_grid(size: int) -> Dictionary:
 		"difficulty_rating": 1.0,
 		"entrance": {"x": entrance_pos.x, "y": entrance_pos.y},
 		"exit": {"x": exit_pos.x, "y": exit_pos.y},
-		"boss_clue_ids": [],
+		"final_word_clue_ids": [],
 		"dungeon_depth": 1,
 		"is_fallback": true,
 	}

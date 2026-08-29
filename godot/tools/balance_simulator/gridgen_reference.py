@@ -180,17 +180,19 @@ def generate_grid(size, target_slots, all_clues, all_enemies, rng, max_regenerat
     entrance = (best_placements[0]["x"], best_placements[0]["y"])
     exit_pos = _bfs_farthest(best_cells, entrance)
 
-    boss_clue_ids = set()
+    # The word containing the exit is the grid's final word. Recorded for the
+    # (not yet built) end-of-grid boss fight; no boss is placed on the grid.
+    # See the matching note in GridGenerator.gd.
+    final_word_clue_ids = set()
     for p in best_placements:
         word = p["clue"]["answer"]
         for i in range(len(word)):
             cx = p["x"] + i if p["dir"] == "across" else p["x"]
             cy = p["y"] if p["dir"] == "across" else p["y"] + i
             if (cx, cy) == exit_pos:
-                boss_clue_ids.add(p["clue"]["id"])
+                final_word_clue_ids.add(p["clue"]["id"])
 
     regular_enemies = [e for e in all_enemies if not e.get("is_boss")]
-    boss_enemy = next((e for e in all_enemies if e.get("is_boss")), None)
 
     cell_primary_clue = {}
     words_across, words_down = [], []
@@ -227,9 +229,7 @@ def generate_grid(size, target_slots, all_clues, all_enemies, rng, max_regenerat
                                    "enemy_id": "", "clue_id": "", "bonus": None, "bonus_claimed": False})
                 continue
             clue_id = cell_primary_clue.get(key, "")
-            if clue_id in boss_clue_ids and boss_enemy:
-                enemy_id = boss_enemy["id"]
-            elif regular_enemies:
+            if regular_enemies:
                 enemy_id = regular_enemies[enemy_counter % len(regular_enemies)]["id"]
                 enemy_counter += 1
             else:

@@ -21,10 +21,27 @@ signal bonus_claimed(pos: Vector2i, bonus: Dictionary)
 signal combat_started(enemy_id: String, clue_id: String)
 signal combat_ended(result: Dictionary)
 signal combat_damage_dealt(amount: int, source: String)
+## The Technical Design Doc (3.5) calls this one `player_damaged`. Kept under
+## the Milestone 1 name because renaming an EventBus signal is a forbidden
+## refactor without approval (CLAUDE.md 9.5); semantics are identical.
 signal combat_damage_taken(amount: int, source: String)
-signal chain_formed(chain_length: int, bonus_multiplier: float)
+signal player_healed(amount: int, source: String)
+signal answer_submitted(answer: String, is_correct: bool, attempt_number: int)
+signal enemy_defeated(enemy_id: String, rewards: Dictionary)
 signal boss_encountered(enemy_id: String)
 signal boss_defeated(enemy_id: String)
+
+# --- Combat timer ---
+signal timer_expired
+signal timer_warning(threshold: float)
+
+# --- Vocabulary chains ---
+## Superseded by chain_detected / chain_activated below, which carry the full
+## chain Dictionary the Technical Design Doc (3.5) specifies. Left in place
+## rather than renamed/removed (CLAUDE.md 9.5); it has no subscribers.
+signal chain_formed(chain_length: int, bonus_multiplier: float)
+signal chain_detected(chain: Dictionary)
+signal chain_activated(chain: Dictionary, effect: Dictionary)
 
 # --- Player / progression ---
 signal player_hp_changed(current_hp: int, max_hp: int)

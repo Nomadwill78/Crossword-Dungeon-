@@ -11,6 +11,7 @@ const GAME_CONFIG_PATH := "res://data/config/game_config.json"
 const GRID_PRESETS_PATH := "res://data/config/grid_presets.json"
 const CLUES_PATH := "res://data/clues/clues_master.json"
 const ENEMIES_PATH := "res://data/enemies/enemies_master.json"
+const DICTIONARY_PATH := "res://data/dictionaries/words_en.json"
 
 const SAVE_PATH := "user://save_data.json"
 const BACKUP_DIR := "user://backups/"
