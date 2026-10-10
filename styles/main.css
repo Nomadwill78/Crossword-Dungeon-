@@ -18,18 +18,34 @@
 
 * { box-sizing: border-box; }
 
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+button, input { touch-action: manipulation; }
+
 body {
   margin: 0;
   background: radial-gradient(circle at top, #23203a, var(--bg) 70%);
   color: var(--text);
   font-family: var(--font);
   min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+  overflow-wrap: anywhere;
 }
 
-#app { max-width: 1100px; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+#app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+  /* Keep content clear of notches and rounded corners on phones. */
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+  padding-bottom: max(3rem, env(safe-area-inset-bottom));
+}
 
 #hud {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--stone);
@@ -44,12 +60,13 @@ body {
   margin: 0;
 }
 
-#hud-stats { display: flex; gap: 1.5rem; align-items: center; }
+#hud-stats { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: center; }
 .stat { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
 .stat .label { color: var(--text-dim); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; }
 
 .bar {
   width: 120px;
+  max-width: 100%;
   height: 12px;
   border-radius: 6px;
   overflow: hidden;
@@ -63,11 +80,22 @@ main { position: relative; }
 #map-view { gap: 1.5rem; flex-wrap: wrap; }
 #map-view:not([hidden]) { display: flex; }
 
-#grid-wrap { flex: 1 1 480px; }
+/* The basis is the grid's natural desktop width: when the row cannot fit grid +
+   clues, the clues wrap below instead of squeezing the grid; on a phone the
+   single item simply shrinks to the screen (min-width: 0). */
+#grid-wrap { flex: 1 1 560px; min-width: 0; }
 
+/* The grid fills the width it is given but never grows past the original
+   32px cells, so desktop looks as before while a phone gets a grid that fits
+   (columns are set from JS via --cols). */
 #grid {
-  display: inline-grid;
-  gap: 3px;
+  --gap: 3px;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 16), minmax(0, 1fr));
+  gap: var(--gap);
+  width: 100%;
+  max-width: calc(var(--cols, 16) * 32px + (var(--cols, 16) - 1) * var(--gap) + 16px);
+  container-type: inline-size;
   background: var(--fog);
   padding: 6px;
   border-radius: 8px;
@@ -75,13 +103,14 @@ main { position: relative; }
 }
 
 .cell {
-  width: 32px;
-  height: 32px;
+  aspect-ratio: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 0.95rem;
+  /* Scale the letter with the cell (cqw = % of the grid's width). */
+  font-size: clamp(0.5rem, calc(100cqw / var(--cols, 16) * 0.5), 0.95rem);
   border-radius: 3px;
   position: relative;
   background: var(--stone-dark);
@@ -108,12 +137,13 @@ main { position: relative; }
   position: absolute;
   top: 1px;
   left: 2px;
-  font-size: 0.5rem;
+  font-size: clamp(0.3rem, calc(100cqw / var(--cols, 16) * 0.26), 0.5rem);
+  line-height: 1;
   color: var(--text-dim);
   font-weight: normal;
 }
 
-#clue-panel { flex: 1 1 320px; max-height: 70vh; overflow-y: auto; }
+#clue-panel { flex: 1 1 320px; min-width: 0; max-height: 70vh; overflow-y: auto; }
 #clue-panel h2 { color: var(--gold); font-size: 1rem; margin: 0.75rem 0 0.4rem; }
 
 .clue-item {
@@ -178,10 +208,10 @@ main { position: relative; }
 
 #battle-monster { text-align: center; margin-bottom: 1rem; }
 #battle-monster h2 { color: var(--danger); margin: 0 0 0.4rem; }
-.monster-bar { width: 260px; margin: 0 auto; }
+.monster-bar { width: 260px; max-width: 100%; margin: 0 auto; }
 
 #battle-word { text-align: center; margin: 1rem 0; min-height: 3rem; }
-#word-slots { display: flex; justify-content: center; gap: 0.4rem; min-height: 2.4rem; }
+#word-slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; min-height: 2.4rem; }
 .slot-tile {
   background: var(--gold);
   color: #221b33;
@@ -214,7 +244,7 @@ main { position: relative; }
 .rack-tile .tile-value { font-size: 0.55rem; color: var(--text-dim); }
 .rack-tile:hover { border-color: var(--gold); }
 
-#battle-controls { display: flex; justify-content: center; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+#battle-controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
 #battle-controls button {
   background: var(--gold);
   border: none;
@@ -223,7 +253,9 @@ main { position: relative; }
   font-weight: bold;
   cursor: pointer;
 }
-#clear-word { background: var(--stone); color: var(--text); }
+/* Needs the extra ID: "#battle-controls button" above is more specific than a
+   lone "#clear-word", which left Clear gold with pale, near-invisible text. */
+#battle-controls #clear-word { background: var(--stone); color: var(--text); }
 #combo-indicator { color: var(--success); font-size: 0.85rem; }
 
 #battle-log {
@@ -254,5 +286,45 @@ main { position: relative; }
   border-radius: 10px;
   padding: 2rem 2.5rem;
   text-align: center;
+  max-width: min(92vw, 30rem);
 }
 #overlay-title { color: var(--gold); font-size: 1.6rem; margin-bottom: 0.5rem; }
+
+/* ---------------------------------------------------------------------
+   Phones and small tablets
+   --------------------------------------------------------------------- */
+@media (max-width: 720px) {
+  #app { padding-top: 0.75rem; padding-left: max(0.5rem, env(safe-area-inset-left)); padding-right: max(0.5rem, env(safe-area-inset-right)); }
+
+  #hud h1 { font-size: 1.15rem; }
+  #hud-stats { width: 100%; justify-content: space-between; gap: 0.5rem 1rem; }
+  #hud .bar { width: clamp(70px, 28vw, 140px); }
+
+  /* Tighter grid chrome so 16 columns get as much room as possible. */
+  #grid { --gap: 2px; padding: 4px; border-width: 1px; }
+
+  #map-view { gap: 1rem; }
+  /* One page scroll instead of a scroll area nested inside the page. */
+  #clue-panel { max-height: none; overflow-y: visible; }
+
+  #battle-view { padding: 0.9rem 0.75rem; }
+  #overlay-content { padding: 1.5rem 1.25rem; }
+}
+
+/* Touch devices: finger-sized controls, and 16px input text so iOS Safari does
+   not zoom the page when an answer box is focused. */
+@media (pointer: coarse), (max-width: 720px) {
+  .clue-item input[type="text"] { font-size: 16px; min-height: 44px; padding: 0.4rem 0.6rem; }
+  .clue-item button { min-height: 44px; min-width: 44px; padding: 0.4rem 0.9rem; font-size: 1rem; }
+  .clue-item .clue-text { font-size: 1rem; }
+
+  #battle-controls button { min-height: 44px; padding: 0.55rem 1.3rem; font-size: 1rem; }
+  .rack-tile { width: 3rem; height: 3rem; font-size: 1.1rem; }
+  .slot-tile { width: 2.6rem; height: 2.6rem; font-size: 1.1rem; }
+  #battle-rack { gap: 0.6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clue-item.shake input { animation: none; }
+  .bar .fill { transition: none; }
+}

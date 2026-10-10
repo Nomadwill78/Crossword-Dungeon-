@@ -54,8 +54,10 @@ function statusFor(p) {
 
 function renderGrid() {
   els.grid.innerHTML = '';
-  els.grid.style.gridTemplateColumns = `repeat(${dungeon.width}, 32px)`;
-  els.grid.style.gridTemplateRows = `repeat(${dungeon.height}, 32px)`;
+  // Cell size comes from CSS: the grid fills the available width (capped at the
+  // desktop cell size), so only the column count is needed here.
+  els.grid.style.setProperty('--cols', dungeon.width);
+  els.grid.style.setProperty('--rows', dungeon.height);
 
   const monsterCellKeys = new Set();
   const clearedCellKeys = new Set();
@@ -186,6 +188,7 @@ function startBattle(index) {
   battle = new BattleSession(p.monster, dictionary, themeWords, dungeon.playerHP, dungeon.playerMaxHP);
   els.mapView.hidden = true;
   els.battleView.hidden = false;
+  window.scrollTo(0, 0);
   renderBattle();
 }
 
@@ -200,6 +203,7 @@ function endBattle() {
   activeBattlePlacementIndex = null;
   els.battleView.hidden = true;
   els.mapView.hidden = false;
+  window.scrollTo(0, 0);
   renderMap();
   if (won) checkVictory();
 }
