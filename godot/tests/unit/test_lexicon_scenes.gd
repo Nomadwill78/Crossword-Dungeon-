@@ -26,7 +26,7 @@ const VIEWPORT_SIZE := Vector2i(1280, 720)
 var _saved: Dictionary = {}
 
 func _init() -> void:
-	suite_name = "Lexicon scenes (smoke)"
+	suite_name = "Scene smoke tests (Lexicon, floors, boss)"
 
 func run_async(host: Node) -> void:
 	_borrow_state()
@@ -35,6 +35,11 @@ func run_async(host: Node) -> void:
 	await _test_full_run_settles(host)
 	await _test_defeat_settles(host)
 	await _test_grid_size_option(host)
+	await _test_descend_and_cash_out(host)
+	await _test_death_on_a_deeper_floor(host)
+	await _test_boss_not_offered_below_level(host)
+	await _test_boss_floor(host)
+	await _test_boss_kills_the_player(host)
 	_return_state()
 
 #----------------------------------------------------------------------------
@@ -153,7 +158,12 @@ func _test_lexicon_actions(host: Node) -> void:
 
 	var learn_buttons := _buttons(scene, "Learn - ")
 	assert_gt(float(learn_buttons.size()), 5.0, "every affordable root node offers a Learn button")
-	assert_eq(_buttons(scene, "Requires").size(), 14, "the 14 gated nodes are locked behind their prerequisites")
+	var gated := 0
+	for tree in LexiconData.get_trees():
+		for node in tree.nodes:
+			if not (node.prerequisites as Array).is_empty():
+				gated += 1
+	assert_eq(_buttons(scene, "Requires").size(), gated, "every node with a prerequisite is locked behind it")
 
 	var cost := int(LexiconData.get_node_def("bst_01").cost)
 	assert_true(scene.buy_node("bst_01"), "buying a node through the scene works")
@@ -253,7 +263,11 @@ func _test_full_run_settles(host: Node) -> void:
 
 	var encounters := _clear_dungeon(scene)
 	assert_gt(float(encounters), 0.0, "the dungeon took at least one encounter")
-	assert_eq(String(GameState.current_run.run_status), "completed", "clearing the grid completes the run")
+	assert_eq(String(GameState.current_run.run_status), "in_progress", "clearing a floor does not end the run - the player chooses")
+	assert_true(scene._floor_panel != null, "a floor-cleared panel offers descend or cash out")
+	assert_true(scene._is_input_locked, "input is locked while the choice is open")
+	scene._on_cash_out_pressed()
+	assert_eq(String(GameState.current_run.run_status), "completed", "cashing out completes the run")
 	assert_true(scene._is_input_locked, "input stays locked after the run ends")
 
 	var summary: Dictionary = GameState.current_run.settlement
@@ -342,3 +356,160 @@ func _test_grid_size_option(host: Node) -> void:
 	var capped := await _spawn(host, DUNGEON_SCENE) as DungeonScene
 	assert_eq(int(GameState.current_run.grid_size), 5, "a locked grid size falls back to the default")
 	await _despawn(host, capped)
+
+#----------------------------------------------------------------------------
+# MULTI-FLOOR RUNS AND THE BOSS
+#----------------------------------------------------------------------------
+func _test_descend_and_cash_out(host: Node) -> void:
+	_fresh_game(0, "2999-01-01")
+	var scene := await _spawn(host, DUNGEON_SCENE) as DungeonScene
+	assert_eq(int(GameState.current_run.dungeon_depth), 1, "a run starts at depth 1")
+	assert_true(scene.get_node("UI/MarginContainer/VBoxContainer/SubtitleLabel").text.contains("Depth 1"), "the HUD shows the depth")
+
+	_clear_dungeon(scene)
+	assert_eq(int(GameState.current_run.tally.floors_cleared), 1, "the floor is counted as cleared")
+	assert_gt(float(_buttons(scene, "Descend to depth 2").size()), 0.0, "the panel offers the next depth")
+	assert_gt(float(_buttons(scene, "Cash Out").size()), 0.0, "and cashing out")
+
+	# The Anagram's grid effect rearranges what the map shows without losing a letter.
+	var letters_before := _solved_letters()
+	scene._apply_grid_effects([{ "type": "swap_solved_letters", "count": 3 }])
+	var letters_after := _solved_letters()
+	var sorted_before := letters_before.duplicate()
+	var sorted_after := letters_after.duplicate()
+	sorted_before.sort()
+	sorted_after.sort()
+	assert_eq(sorted_after, sorted_before, "Letter Swap never adds or removes a letter")
+	assert_ne(letters_after, letters_before, "but it does rearrange them")
+
+	var ink_before := int(GameState.current_run.player_state.total_ink_drops_this_run)
+	var grid_before: Dictionary = GameState.current_run.grid_state
+	GameState.current_run.player_state["current_hp"] = 50
+	scene._on_floor_primary_pressed()
+	assert_eq(int(GameState.current_run.dungeon_depth), 2, "descending goes one floor deeper")
+	assert_true(scene._floor_panel == null, "and the panel closes")
+	assert_eq(int(GameState.current_run.player_state.current_hp), 80, "HP carries over, plus 30% of max HP")
+	assert_ne(GameState.current_run.grid_state, grid_before, "a fresh grid was built")
+	assert_gt(float(scene._navigator.unsolved_letter_count()), 0.0, "with letters still to solve")
+	assert_false(scene._is_input_locked, "and the player can move again")
+	assert_eq(int(GameState.current_run.player_state.total_ink_drops_this_run), ink_before, "Ink collected so far carries over")
+	assert_eq(int(GameState.current_run.tally.deepest_depth), 2, "the deepest depth is tracked")
+	assert_true(scene.get_node("UI/MarginContainer/VBoxContainer/SubtitleLabel").text.contains("Depth 2"), "and the HUD follows")
+
+	_clear_dungeon(scene)
+	scene._on_cash_out_pressed()
+	assert_eq(String(GameState.current_run.run_status), "completed", "cashing out completes the run")
+	assert_eq(int(GameState.player_profile.deepest_depth), 2, "the deepest depth reaches the profile")
+	assert_eq(int(GameState.statistics.total_floors_cleared), 2, "both floors count")
+	assert_true(bool(GameState.current_run.settlement.completed), "and the summary calls it a win")
+	assert_eq(int(GameState.player_profile.runs_completed), 1, "exactly one run was settled")
+	await _despawn(host, scene)
+
+func _solved_letters() -> Array:
+	var out: Array = []
+	for cell in GameState.current_run.grid_state.cells:
+		if cell.type == "letter" and bool(cell.solved):
+			out.append(String(cell.letter))
+	return out
+
+func _test_death_on_a_deeper_floor(host: Node) -> void:
+	_fresh_game(0, "2999-01-01")
+	var scene := await _spawn(host, DUNGEON_SCENE) as DungeonScene
+	_clear_dungeon(scene)
+	scene._on_floor_primary_pressed()
+	assert_eq(int(GameState.current_run.dungeon_depth), 2, "setup: the player is on depth 2")
+	var haul := int(GameState.current_run.player_state.total_ink_drops_this_run)
+	assert_gt(float(haul), 0.0, "setup: floor 1 earned Ink")
+
+	scene._on_combat_finished({
+		"victory": false, "player_defeated": true, "cell": Vector2i.ZERO, "clue_id": "x",
+		"enemy_id": "enemy_test", "answer": "", "attempts_used": 3, "damage_dealt": 0, "damage_taken": 100,
+	})
+	assert_eq(String(GameState.current_run.run_status), "failed", "dying on depth 2 fails the run")
+	var retention := float(ConfigLoader.load_json(Constants.GAME_CONFIG_PATH).ink_economy.defeat_retention)
+	assert_eq(int(GameState.current_run.settlement.ink.total), int(floor(haul * retention)), "and only the retained share of everything collected is banked")
+	assert_eq(int(GameState.player_profile.deepest_depth), 2, "the depth reached still counts")
+	assert_eq(int(GameState.current_run.tally.floors_cleared), 1, "and the floor cleared")
+	await _despawn(host, scene)
+
+func _test_boss_not_offered_below_level(host: Node) -> void:
+	_fresh_game(PlayerLevel.ink_for_level(10), "2999-01-01")
+	var scene := await _spawn(host, DUNGEON_SCENE) as DungeonScene
+	scene._dungeon_depth = 5
+	_clear_dungeon(scene)
+	assert_false(scene._boss_due(), "below level 30 the boss does not guard depth 5")
+	assert_gt(float(_buttons(scene, "Descend to depth 6").size()), 0.0, "the way down is simply open")
+	await _despawn(host, scene)
+
+## Answers the boss round currently on screen the way a perfect player would.
+func _answer_boss_round(scene: DungeonScene, exact: bool = true) -> void:
+	var combat: CombatScene = scene._combat_scene
+	combat._on_reveal_finished()
+	var answer := String(combat._machine.get_clue().answer)
+	for attempt in range(3):
+		if combat._machine == null or combat._machine.is_finished():
+			break
+		combat._machine.submit_answer(answer if exact else "ZZZ")
+
+func _test_boss_floor(host: Node) -> void:
+	_fresh_game(PlayerLevel.ink_for_level(30), "2999-01-01")
+	assert_gt(float(GameState.player_profile.player_level), 29.0, "setup: the player is level 30+")
+	var scene := await _spawn(host, DUNGEON_SCENE) as DungeonScene
+	scene._dungeon_depth = 4
+	scene._descend()
+	assert_eq(int(GameState.current_run.dungeon_depth), 5, "setup: the player reached depth 5")
+
+	_clear_dungeon(scene)
+	assert_true(scene._boss_due(), "at depth 5 with the unlock, the boss guards the way down")
+	assert_eq(_buttons(scene, "Face The Thesaurus").size(), 1, "the panel offers the fight instead of the stairs")
+	assert_eq(_buttons(scene, "Descend to depth").size(), 0, "and no way past it")
+	assert_gt(float(_buttons(scene, "Cash Out").size()), 0.0, "though cashing out is always possible")
+
+	var ink_before := int(GameState.current_run.player_state.total_ink_drops_this_run)
+	var hp_before := int(GameState.current_run.player_state.current_hp)
+	scene._on_floor_primary_pressed()
+	assert_true(scene._boss != null, "the fight begins")
+	assert_true(scene._combat_scene != null, "with a round on screen")
+	assert_true(scene._combat_scene._phase_banner.text.begins_with("Phase 1"), "showing the boss's phase")
+	assert_true(bool(GameState.current_run.boss_encountered), "and the run records the encounter")
+	assert_true(scene._is_input_locked, "the map is locked during the fight")
+
+	var rounds := 0
+	while scene._boss != null and rounds < 60 and String(GameState.current_run.run_status) == "in_progress":
+		_answer_boss_round(scene)
+		rounds += 1
+	assert_true(scene._boss == null, "the fight ended")
+	assert_between(float(rounds), 3.0, 40.0, "after a sensible number of rounds (%d)" % rounds)
+	assert_eq(int(GameState.current_run.tally.bosses_defeated), 1, "the kill is tallied")
+	assert_true(bool(GameState.current_run.boss_defeated), "and recorded on the run")
+	assert_eq(int(GameState.current_run.player_state.current_hp), hp_before, "a flawless fight costs no HP")
+	assert_gt(float(int(GameState.current_run.player_state.total_ink_drops_this_run) - ink_before), float(BossEncounter.config().reward_ink) - 1.0, "and pays the boss's Ink reward")
+	assert_false(scene._boss_due(), "the boss does not guard this floor twice")
+	assert_eq(_buttons(scene, "Descend to depth 6").size(), 1, "the way down is open after the kill")
+	assert_true(scene._combat_scene == null, "and no round is left on screen")
+
+	scene._on_cash_out_pressed()
+	var earned: Array = []
+	for entry in GameState.current_run.settlement.achievements:
+		earned.append(String(entry.id))
+	assert_true(earned.has("thesaurus_slayer"), "cashing out after the kill earns Thesaurus Slayer")
+	assert_true(earned.has("deep_diver"), "and Deep Diver for reaching depth 5")
+	assert_eq(int(GameState.statistics.total_bosses_defeated), 1, "the kill is on the lifetime statistics")
+	await _despawn(host, scene)
+
+func _test_boss_kills_the_player(host: Node) -> void:
+	_fresh_game(PlayerLevel.ink_for_level(30), "2999-01-01")
+	var scene := await _spawn(host, DUNGEON_SCENE) as DungeonScene
+	scene._dungeon_depth = 4
+	scene._descend()
+	_clear_dungeon(scene)
+	scene._on_floor_primary_pressed()
+	assert_true(scene._boss != null, "setup: the fight began")
+
+	_answer_boss_round(scene, false)
+	assert_eq(String(GameState.current_run.run_status), "failed", "three misses at the boss's damage kill a 100 HP player")
+	assert_true(scene._boss == null or scene._boss.player_died, "the fight records the death")
+	assert_false(bool(GameState.current_run.boss_defeated), "and the boss is not defeated")
+	assert_eq(int(GameState.statistics.total_deaths), 1, "the death is counted")
+	assert_true(scene._is_input_locked, "and the player cannot keep playing")
+	await _despawn(host, scene)

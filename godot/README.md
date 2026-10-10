@@ -1,4 +1,4 @@
-# Wordsmith's Gambit — Godot Prototype (Milestones 1-3)
+# Wordsmith's Gambit — Godot Prototype (Milestones 1-4)
 
 A Godot 4.3 implementation of the same core concept as the browser build at
 the repo root: a procedurally generated crossword grid that doubles as a
@@ -10,6 +10,9 @@ dungeon map.
 * **Milestone 3** — the Lexicon: Ink Drops, Vocabulary Trees, Tomes, a
   1-50 player level with unlocks, achievements, a daily login reward, run
   settlement, and real persistence. What you buy now changes how runs play.
+* **Milestone 4** — multi-floor runs (descend deeper or cash out), enemy
+  special abilities that unlock by depth, tag-based enemy weaknesses, and The
+  Thesaurus, a three-phase boss that guards every 5th floor.
 
 ## Running it
 
@@ -50,6 +53,36 @@ test/bot logic itself. Use those two scenes, not `--script`, to actually run
 them.
 
 ## Architecture
+
+### Floors, abilities and the boss (Milestone 4)
+
+Design decisions and the places this departs from the design docs are in
+[ADR-004](docs/adr/004-enemy-abilities-and-the-thesaurus.md).
+
+- **Floors.** A run is a ladder. Clearing a grid opens a *Floor cleared* panel:
+  **Descend** (depth + 1, a fresh grid, HP and Ink carry over, +30% max HP heal)
+  or **Cash Out** (bank the run). Enemy HP and damage scale with depth and their
+  abilities wake at depths 3 / 6 / 10 / 15. Dying anywhere is a loss.
+- **Abilities** (`src/core/combat/EnemyAbilities.gd`, applied by
+  `CombatStateMachine`): Anagram swaps solved letters on the map, Palindrome
+  reads your next answer backwards (it warns you first), Homophone garbles the
+  clue, Acronym halves your next attempt's clock, Portmanteau merges in a decoy
+  clue. Cooldowns are counted in attempts against that enemy type.
+- **Weaknesses** now exist for every enemy, read from clue `tags` (`compound`,
+  `homophone`, `abbreviation`) in `clues_master.json`. A seventh clue category,
+  `GAME_JARGON`, holds the abbreviations the Acronym needs.
+- **The Thesaurus** (`src/core/combat/BossEncounter.gd`) guards the exit of
+  every 5th floor for a player with the Lv 30 unlock (`game_config.json` ->
+  `boss_encounter`). It is a series of single-clue rounds against one HP pool,
+  each an ordinary state machine in `round_mode`, in three phases: the clue is
+  reworded after a miss; the prompt asks for the *opposite* of a clue; an
+  archaic spelling is demanded (the modern one still counts, at half damage).
+  It only strikes on a miss. Beating it pays Ink and earns *Thesaurus Slayer*.
+- **Content** lives in `data/enemies/boss_rounds.json` (rewordings, opposite
+  pairs, archaic spellings) and `ability_rules.json` (sound-alikes and phonetic
+  rules).
+- **UI**: `CombatScene` shows ability notices, the boss's phase banner and
+  changed prompts; `FloorPanel` is the descend / cash-out / face-the-boss choice.
 
 ### The Lexicon (Milestone 3)
 
@@ -142,7 +175,7 @@ saved without a schema version bump).
   (cached asset loading).
 - `src/utils/Constants.gd` — enums, data paths, render colors.
 - `src/scenes/` — `MainMenuScene` and `DungeonScene` (the playable demo).
-- `data/` — `clues/clues_master.json` (115 clues, 6 categories, lengths
+- `data/` — `clues/clues_master.json` (121 clues, 7 categories, lengths
   3-10), `config/grid_presets.json` (6 size/density presets),
   `config/game_config.json` (balance constants), `enemies/enemies_master.json`
   (5 enemies + 1 boss), `dictionaries/words_en.json` (16,360 words for
@@ -152,21 +185,21 @@ saved without a schema version bump).
 
 Everything below is a conscious gap, not an oversight:
 
-- **The boss fight does not exist yet.** Design Doc 4.2's loop is "fill the
-  grid -> boss encounter", so The Thesaurus is a fight *after* the grid, not
-  a cell in it. `grid_state.final_word_clue_ids` records which word gated
-  the exit, ready for that encounter to be built.
-- **Three enemies ship with `weakness: null`.** Homophone, Acronym and
-  Portmanteau each have a Design Doc weakness that depends on data or a
-  system that does not exist yet (homophone-tagged clues, abbreviation-style
-  answers, compound-word tagging). Each carries a `weakness_pending` field
-  saying exactly what it is waiting on. Encoding a guess would have meant a
-  weakness that silently never fires, or one that fires on every hit.
-- **The Thesaurus's synonym rule is inert** for the same reason:
-  ClueResolver accepts exact matches only, so "synonyms deal 50%" has
-  nothing to act on.
-- **Enemy special abilities are data, not behaviour.** Every enemy has its
-  ability defined with an unlock depth; nothing invokes them yet.
+- **The Thesaurus is untuned and its synonym rule is only half there.** The
+  playtest bot (a far better typist than a person) wins ~90% of boss fights.
+  Phase 1 rewords the clue but does not accept synonym *answers* ("synonyms
+  deal 50%" would need synonym data); the 50% rule is realised through the
+  phase-3 archaic/modern spelling instead.
+- **Boss content is small.** 40 rewordings, 7 opposite pairs and 8 archaic
+  spellings: a fight never repeats within itself until a pool runs out, but a
+  long career will see repeats.
+- **The Homophone's weakness is a reading, not the doc's.** Design Doc 4.4 says
+  "context clues", which is not computable; it is weak to answers with a
+  sound-alike (RAIN / REIGN) instead.
+- **Abbreviate only works in timed fights**, so tests and the playtest bot (which
+  are untimed) skip it; a unit test covers it with a real timer.
+- **Depth is not saved mid-run** (like everything else about a run), and the
+  Delve tab cannot start you below depth 1.
 - **Level unlocks other than grid sizes are listed but not enforced.**
   Chain stacking (Lv 10), Hardcore mode (15), custom grid themes (25), the
   Thesaurus boss (30), daily-challenge participation (40) and the Grandmaster
@@ -177,15 +210,16 @@ Everything below is a conscious gap, not an oversight:
 - **Dictionary Upgrades and the Dictionary-fragment drop are not built.**
   `ink_economy.dictionary_fragment_*` and `player_profile.dictionary_fragments`
   exist as config/state, but nothing drops or spends fragments, and the clue
-  pool is never gated by an "unlocked dictionary" (the 115-clue pool is too
+  pool is never gated by an "unlocked dictionary" (the 121-clue pool is too
   small to shrink).
 - **Cosmetic grid themes** are stored (`unlocked_themes`, `active_theme`) and
   survive a save, but there is nothing to buy or render yet.
 - **Ink per letter is 2** (`ink_economy.ink_per_letter`), not Design Doc
-  5.1's 10. A random-play bot earns about 115 Ink per run (137 per cleared
-  run), which puts level 5 a few runs away and level 50 roughly 150 cleared
-  runs away; at 10 per letter those figures drop sharply. It is a one-line
-  config change once real play data exists.
+  5.1's 10. The playtest bot (a better typist than a person, and it climbs
+  several floors) is paid about 250 Ink per run, which puts level 5 a couple of
+  runs away and level 50 (20,000 lifetime Ink) roughly 80 runs away; a casual
+  player earns far less. At 10 per letter those figures drop sharply. It is a
+  one-line config change once real play data exists.
 - **A timer bonus also nudges the time-damage bonus.** The speed multiplier
   compares time left to the *base* clue time, so a node/tome that adds seconds
   makes a fast answer slightly stronger as well. Changing that would alter the

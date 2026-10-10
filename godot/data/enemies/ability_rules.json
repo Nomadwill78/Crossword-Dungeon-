@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "_note": "Data for the regular-enemy special abilities (enemies_master.json special_ability.effect.mode). mishearing (Homophone): every word found in word_swaps is replaced by its sound-alike, then phonetic_rules are applied to the remaining words, garbling the clue text without changing its answer. blend (Portmanteau): a second clue with the same answer length is merged into the prompt in random order, so only one of the two is real.",
+  "mishearing": {
+    "phonetic_rules": [
+      [
+        "ph",
+        "f"
+      ],
+      [
+        "ck",
+        "k"
+      ],
+      [
+        "kn",
+        "n"
+      ],
+      [
+        "wr",
+        "r"
+      ],
+      [
+        "wh",
+        "w"
+      ],
+      [
+        "tion",
+        "shun"
+      ],
+      [
+        "ough",
+        "uff"
+      ],
+      [
+        "igh",
+        "ie"
+      ],
+      [
+        "ce",
+        "se"
+      ],
+      [
+        "ci",
+        "si"
+      ],
+      [
+        "qu",
+        "kw"
+      ]
+    ],
+    "word_swaps": {
+      "to": "two",
+      "too": "to",
+      "for": "four",
+      "one": "won",
+      "no": "know",
+      "know": "no",
+      "see": "sea",
+      "sea": "see",
+      "by": "buy",
+      "hear": "here",
+      "here": "hear",
+      "their": "there",
+      "there": "their",
+      "be": "bee",
+      "would": "wood",
+      "wood": "would",
+      "which": "witch",
+      "whole": "hole",
+      "write": "right",
+      "right": "write",
+      "rain": "reign",
+      "road": "rode",
+      "sun": "son",
+      "son": "sun",
+      "bear": "bare",
+      "flower": "flour",
+      "knight": "night",
+      "night": "knight",
+      "steel": "steal",
+      "tale": "tail",
+      "wait": "weight",
+      "weak": "week",
+      "wear": "where",
+      "where": "wear",
+      "main": "mane",
+      "mail": "male",
+      "pair": "pear",
+      "plain": "plane",
+      "sail": "sale",
+      "or": "oar",
+      "in": "inn",
+      "new": "knew",
+      "knew": "new",
+      "dear": "deer",
+      "deer": "dear",
+      "eye": "aye",
+      "hour": "our",
+      "our": "hour",
+      "made": "maid",
+      "maid": "made",
+      "pain": "pane",
+      "peace": "piece",
+      "piece": "peace",
+      "board": "bored",
+      "bored": "board",
+      "cell": "sell",
+      "sell": "cell",
+      "heal": "heel",
+      "heel": "heal",
+      "hole": "whole",
+      "isle": "aisle",
+      "key": "quay",
+      "knot": "not",
+      "not": "knot",
+      "mist": "missed",
+      "nose": "knows",
+      "knows": "nose",
+      "ore": "oar",
+      "cent": "scent",
+      "scent": "cent",
+      "seen": "scene",
+      "scene": "seen",
+      "tide": "tied",
+      "tied": "tide",
+      "vain": "vein",
+      "vein": "vain",
+      "waist": "waste",
+      "waste": "waist",
+      "weather": "whether",
+      "whether": "weather"
+    }
+  },
+  "blend": {
+    "separator": "  ...or was it...  ",
+    "notice": "Two clues are merged - only one is real!"
+  }
+}

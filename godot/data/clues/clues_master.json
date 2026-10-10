@@ -47,7 +47,13 @@
       "length": 3,
       "category": "WEAPONS_ARMOR",
       "clue": "Fires arrows from a distance",
-      "difficulty": 1
+      "difficulty": 1,
+      "homophones": [
+        "BOUGH"
+      ],
+      "tags": [
+        "homophone"
+      ]
     },
     {
       "id": "clue_007_den",
@@ -159,7 +165,13 @@
       "length": 4,
       "category": "MAGIC_ARCANE",
       "clue": "Mystical covering that hides the truth",
-      "difficulty": 1
+      "difficulty": 1,
+      "homophones": [
+        "VALE"
+      ],
+      "tags": [
+        "homophone"
+      ]
     },
     {
       "id": "clue_021_cave",
@@ -191,7 +203,14 @@
       "length": 4,
       "category": "NATURE_ELEMENTS",
       "clue": "Falls from storm clouds",
-      "difficulty": 1
+      "difficulty": 1,
+      "homophones": [
+        "REIGN",
+        "REIN"
+      ],
+      "tags": [
+        "homophone"
+      ]
     },
     {
       "id": "clue_025_wind",
@@ -247,7 +266,13 @@
       "length": 5,
       "category": "FANTASY_CREATURES",
       "clue": "Practitioner of dark hexes",
-      "difficulty": 2
+      "difficulty": 2,
+      "homophones": [
+        "WHICH"
+      ],
+      "tags": [
+        "homophone"
+      ]
     },
     {
       "id": "clue_032_charm",
@@ -295,7 +320,13 @@
       "length": 5,
       "category": "DUNGEON_PLACES",
       "clue": "Foul tunnel beneath the city",
-      "difficulty": 2
+      "difficulty": 2,
+      "homophones": [
+        "SOWER"
+      ],
+      "tags": [
+        "homophone"
+      ]
     },
     {
       "id": "clue_038_grave",
@@ -575,7 +606,10 @@
       "length": 7,
       "category": "NATURE_ELEMENTS",
       "clue": "Illuminated by the night sky's glow",
-      "difficulty": 2
+      "difficulty": 2,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_073_sadness",
@@ -623,7 +657,10 @@
       "length": 8,
       "category": "FANTASY_CREATURES",
       "clue": "Cursed to become a wolf by moonlight",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_079_phantasm",
@@ -655,7 +692,10 @@
       "length": 8,
       "category": "WEAPONS_ARMOR",
       "clue": "Mechanical bow that fires bolts",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_083_gauntlet",
@@ -679,7 +719,10 @@
       "length": 8,
       "category": "DUNGEON_PLACES",
       "clue": "Steps leading to the next level down",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_086_catacomb",
@@ -735,7 +778,10 @@
       "length": 9,
       "category": "MAGIC_ARCANE",
       "clue": "Where a mage keeps their incantations",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_093_warhammer",
@@ -743,7 +789,10 @@
       "length": 9,
       "category": "WEAPONS_ARMOR",
       "clue": "A massive two-handed crushing weapon",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_094_labyrinth",
@@ -767,7 +816,10 @@
       "length": 9,
       "category": "DUNGEON_PLACES",
       "clue": "Where headstones mark the fallen",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_097_lightning",
@@ -791,7 +843,10 @@
       "length": 9,
       "category": "NATURE_ELEMENTS",
       "clue": "A spinning column of violent air",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_100_heartache",
@@ -799,7 +854,10 @@
       "length": 9,
       "category": "EMOTIONS_ABSTRACT",
       "clue": "Emotional pain from loss or longing",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_101_nightmare",
@@ -807,7 +865,10 @@
       "length": 9,
       "category": "EMOTIONS_ABSTRACT",
       "clue": "A dream that turns to terror",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_102_bloodlust",
@@ -815,7 +876,10 @@
       "length": 9,
       "category": "EMOTIONS_ABSTRACT",
       "clue": "An overwhelming thirst for battle",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_103_underworld",
@@ -823,7 +887,10 @@
       "length": 10,
       "category": "DUNGEON_PLACES",
       "clue": "The realm said to lie beneath the living world",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_104_gravestone",
@@ -831,7 +898,10 @@
       "length": 10,
       "category": "DUNGEON_PLACES",
       "clue": "Marks where the dead were buried",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_105_drawbridge",
@@ -839,7 +909,10 @@
       "length": 10,
       "category": "DUNGEON_PLACES",
       "clue": "Raises to seal off the castle gate",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_106_watchtower",
@@ -847,7 +920,10 @@
       "length": 10,
       "category": "DUNGEON_PLACES",
       "clue": "A lookout post scanning for danger",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_107_stalactite",
@@ -871,7 +947,10 @@
       "length": 10,
       "category": "NATURE_ELEMENTS",
       "clue": "A poisonous plant favored by alchemists",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_110_overgrowth",
@@ -879,7 +958,10 @@
       "length": 10,
       "category": "NATURE_ELEMENTS",
       "clue": "Vegetation reclaiming an abandoned ruin",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_111_broadsword",
@@ -887,7 +969,10 @@
       "length": 10,
       "category": "WEAPONS_ARMOR",
       "clue": "A wide-bladed two-handed sword",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_112_ironshield",
@@ -895,7 +980,10 @@
       "length": 10,
       "category": "WEAPONS_ARMOR",
       "clue": "Sturdy metal-bound defensive gear",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_113_enchanting",
@@ -911,7 +999,10 @@
       "length": 10,
       "category": "FANTASY_CREATURES",
       "clue": "Keen-nosed beast that tracks by scent",
-      "difficulty": 3
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
     },
     {
       "id": "clue_115_terrifying",
@@ -920,6 +1011,72 @@
       "category": "EMOTIONS_ABSTRACT",
       "clue": "Causing great fear",
       "difficulty": 3
+    },
+    {
+      "id": "clue_116_npc",
+      "answer": "NPC",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Townsfolk who repeat one line forever, for short",
+      "difficulty": 1,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_117_rpg",
+      "answer": "RPG",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Genre of game about levels, loot and quests, for short",
+      "difficulty": 1,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_118_mmo",
+      "answer": "MMO",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Online world packed with thousands of adventurers, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_119_dps",
+      "answer": "DPS",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Damage dealt every second, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_120_aoe",
+      "answer": "AOE",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Spell that hits everything in an area, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_121_tpk",
+      "answer": "TPK",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "When the whole adventuring party falls, for short",
+      "difficulty": 3,
+      "tags": [
+        "abbreviation"
+      ]
     }
   ]
 }

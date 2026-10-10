@@ -59,12 +59,20 @@ func show_summary(summary: Dictionary, run: Dictionary) -> void:
 
 	var tally: Dictionary = run.get("tally", {})
 	box.add_child(_label(
+		"Floors cleared %d   |   Deepest depth %d" % [
+			int(tally.get("floors_cleared", 0)),
+			int(tally.get("deepest_depth", 1)),
+		], 14, Color(0.8, 0.8, 0.85), true
+	))
+	box.add_child(_label(
 		"Words solved %d   |   Chains %d   |   Longest chain %d" % [
 			int(tally.get("words_solved", 0)),
 			int(tally.get("chains_activated", 0)),
 			int(tally.get("longest_chain", 0)),
 		], 14, Color(0.8, 0.8, 0.85), true
 	))
+	if int(tally.get("bosses_defeated", 0)) > 0:
+		box.add_child(_label("The Thesaurus is defeated!", 15, Constants.COLOR_SOLVED_LETTER, true))
 	box.add_child(HSeparator.new())
 
 	var ink: Dictionary = summary.get("ink", {})

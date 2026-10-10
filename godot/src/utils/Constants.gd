@@ -15,6 +15,8 @@ const DICTIONARY_PATH := "res://data/dictionaries/words_en.json"
 const VOCABULARY_TREES_PATH := "res://data/lexicon/vocabulary_trees.json"
 const TOMES_PATH := "res://data/lexicon/tomes.json"
 const ACHIEVEMENTS_PATH := "res://data/lexicon/achievements.json"
+const BOSS_ROUNDS_PATH := "res://data/enemies/boss_rounds.json"
+const ABILITY_RULES_PATH := "res://data/enemies/ability_rules.json"
 
 const SAVE_PATH := "user://save_data.json"
 const BACKUP_DIR := "user://backups/"
@@ -37,6 +39,7 @@ const CATEGORIES := [
 	"DUNGEON_PLACES",
 	"NATURE_ELEMENTS",
 	"EMOTIONS_ABSTRACT",
+	"GAME_JARGON",
 ]
 
 static func cell_type_to_string(type: int) -> String:

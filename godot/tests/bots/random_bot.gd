@@ -8,6 +8,12 @@
 # CombatScene: all encounter logic lives in the machine, the scene is only
 # presentation, and skipping the UI keeps a few hundred simulations fast.
 #
+# Milestone 4: a run is a ladder of floors. After each cleared floor the bot
+# descends (up to MAX_DEPTH) or cashes out at random, enemies scale with depth
+# and their special abilities wake at their unlock depths, the Anagram's Letter
+# Swap is applied to the grid, and every fifth floor ends in a boss fight
+# (forced, regardless of level, so the boss code gets exercised).
+#
 # Milestone 3: the 100 simulations are one career. Between runs the bot
 # shops in the Lexicon (random affordable vocabulary nodes and tomes through
 # the real VocabularyTree / TomeManager), each run starts from that loadout,
@@ -24,10 +30,14 @@ extends RefCounted
 
 const NUM_SIMULATIONS: int = 100
 const MAX_MOVES_PER_RUN: int = 200
+const MAX_DEPTH: int = 16
+## Each run draws a skill between these: the chance each typed answer is right.
+## A spread, so weak runs die early (covering defeat) while strong ones go deep
+## enough to meet the depth-6 and depth-10 abilities and the boss.
+const MIN_SKILL: float = 0.40
+const MAX_SKILL: float = 0.97
+const BOSS_MODERN_SPELLING_CHANCE: float = 0.25
 
-## Chance the bot types the right answer. Deliberately well below a real
-## player so misses, counter-attacks and attempt exhaustion all get covered.
-const CORRECT_ANSWER_CHANCE: float = 0.45
 
 enum FightOutcome { WON, OUT_OF_ATTEMPTS, PLAYER_DIED }
 
@@ -47,6 +57,15 @@ var nodes_bought: int = 0
 var tomes_bought: int = 0
 var achievements_earned: int = 0
 var damage_reduction_peak: float = 0.0
+var floors_cleared_total: int = 0
+var deepest_depth_reached: int = 0
+var letter_swaps: int = 0
+var boss_fights: int = 0
+var boss_wins: int = 0
+var boss_deaths: int = 0
+var boss_rounds_total: int = 0
+var boss_phases_seen: Dictionary = {}
+var abilities_fired: Dictionary = {}
 ## Ink actually paid out by run settlement (excludes the bot's random
 ## windfalls and achievement rewards), for judging real pacing.
 var settled_run_ink: int = 0
@@ -61,6 +80,7 @@ var _run_ink: int = 0
 var _expected_lifetime: int = 0
 var _total_spent: int = 0
 var _last_level: int = 1
+var _skill: float = 0.5
 
 func run_all() -> void:
 	print("=== Random Bot Simulation ===")
@@ -93,9 +113,11 @@ func _run_simulation() -> void:
 	}
 	var loadout := LexiconEffects.apply_to_player_state(player_state, _lexicon)
 	damage_reduction_peak = maxf(damage_reduction_peak, float(loadout.damage_reduction))
+	_skill = randf_range(MIN_SKILL, MAX_SKILL)
 	_tally = {
 		"words_solved": 0, "letters_solved": 0, "enemies_defeated": 0, "bosses_defeated": 0,
 		"chains_activated": 0, "chains_by_length": {}, "longest_chain": 0,
+		"floors_cleared": 0, "deepest_depth": 1,
 	}
 	_run_ink = 0
 
@@ -108,6 +130,8 @@ func _run_simulation() -> void:
 		"final_score": 100 if completed else 0,
 		"duration_seconds": 60.0 if completed else INF,
 	}
+	floors_cleared_total += int(_tally.floors_cleared)
+	deepest_depth_reached = maxi(deepest_depth_reached, int(_tally.deepest_depth))
 	var summary := RunSettlement.settle(_profile, _lexicon, _statistics, run, completed)
 	_expected_lifetime += int(summary.ink.total)
 	settled_run_ink += int(summary.ink.total)
@@ -118,10 +142,45 @@ func _run_simulation() -> void:
 		achievements_earned += 1
 	_check_economy()
 
-## Plays one dungeon. Returns true if the grid was cleared.
+enum FloorResult { CLEARED, DIED, STUCK }
+
+## Plays a whole run: floors until the bot cashes out, dies, or gets stuck.
+## Returns true if the run was cashed out alive (a completed run).
 func _play_run(player_state: Dictionary) -> bool:
+	var depth := 1
+	while true:
+		_tally["deepest_depth"] = maxi(int(_tally.deepest_depth), depth)
+		var result := _play_floor(player_state, depth)
+		if result == FloorResult.DIED:
+			runs_died += 1
+			return false
+		if result == FloorResult.STUCK:
+			runs_out_of_moves += 1
+			return false
+
+		_tally["floors_cleared"] = int(_tally.floors_cleared) + 1
+
+		# Every fifth floor the boss guards the way down.
+		if depth % 5 == 0:
+			if not _fight_boss(player_state, depth):
+				runs_died += 1
+				return false
+
+		# Better players push their luck further.
+		if depth >= MAX_DEPTH or randf() > 0.5 + 0.45 * _skill:
+			runs_completed += 1
+			return true
+
+		var max_hp := int(player_state.max_hp)
+		var heal_fraction := float(ConfigLoader.load_json(Constants.GAME_CONFIG_PATH).get("floors", {}).get("descent_heal_fraction", 0.0))
+		player_state["current_hp"] = mini(max_hp, int(player_state.current_hp) + int(round(max_hp * heal_fraction)))
+		depth += 1
+	return false
+
+## Plays one floor at [param depth] until every letter is solved.
+func _play_floor(player_state: Dictionary, depth: int) -> FloorResult:
 	var generator := GridGenerator.new()
-	var grid: Dictionary = generator.generate_grid(5, 1, 1)
+	var grid: Dictionary = generator.generate_grid(5, depth, 1)
 
 	var navigator := GridNavigator.new()
 	navigator.initialize(grid)
@@ -135,9 +194,9 @@ func _play_run(player_state: Dictionary) -> bool:
 	for move in range(MAX_MOVES_PER_RUN):
 		total_moves += 1
 
-		if navigator.is_at_exit() and navigator.unsolved_letter_count() == 0:
-			runs_completed += 1
-			return true
+		# The game clears a floor the moment its last letter is solved.
+		if navigator.unsolved_letter_count() == 0:
+			return FloorResult.CLEARED
 
 		# Prefer a cell this run has not already failed. A player who just
 		# burned three attempts on a clue walks away and comes back; a bot
@@ -153,10 +212,9 @@ func _play_run(player_state: Dictionary) -> bool:
 
 		if not candidates.is_empty():
 			var target: Vector2i = candidates[randi() % candidates.size()]
-			var outcome := _fight(navigator, grid, player_state, activated_chains, target)
+			var outcome := _fight(navigator, grid, player_state, activated_chains, target, depth)
 			if outcome == FightOutcome.PLAYER_DIED:
-				runs_died += 1
-				return false
+				return FloorResult.DIED
 			if outcome == FightOutcome.OUT_OF_ATTEMPTS:
 				failed_cells[target] = true
 				encounters_abandoned += 1
@@ -174,10 +232,50 @@ func _play_run(player_state: Dictionary) -> bool:
 		if not moved:
 			# Boxed in with no reachable encounter - that is a real soft-lock.
 			soft_locks += 1
-			return false
+			return FloorResult.STUCK
 
-	runs_out_of_moves += 1
-	return false
+	return FloorResult.STUCK
+
+## Fights the boss as a series of rounds. Returns true if the player survived
+## (won, or the backstop ended it), false if the player died.
+func _fight_boss(player_state: Dictionary, depth: int) -> bool:
+	boss_fights += 1
+	var fight := BossEncounter.begin(depth, 5)
+	var rounds := 0
+	while not fight.is_over() and rounds < 100:
+		boss_phases_seen[fight.current_phase_index()] = true
+		var clue := fight.next_round_clue()
+		var holder: Array = []
+		var machine := CombatStateMachine.new()
+		machine.round_mode = true
+		machine.combat_finished.connect(func(summary): holder.append(summary))
+		machine.setup(clue, fight.boss, player_state)
+		machine.begin()
+		var guard := 0
+		while not machine.is_finished() and guard < 12:
+			guard += 1
+			machine.submit_answer(_pick_boss_answer(clue))
+		if holder.is_empty():
+			push_error("RandomBot: a boss round did not finish")
+			soft_locks += 1
+			return false
+		fight.finish_round(holder[0])
+		rounds += 1
+		_check(int(player_state.current_hp) <= int(player_state.max_hp), "HP never exceeds max HP in a boss fight")
+
+	boss_rounds_total += rounds
+	if not fight.is_over():
+		push_error("RandomBot: the boss fight did not end within 100 rounds")
+		soft_locks += 1
+		return false
+	if fight.player_died:
+		boss_deaths += 1
+		return false
+	if fight.is_won():
+		boss_wins += 1
+		_tally["bosses_defeated"] = int(_tally.bosses_defeated) + 1
+		_run_ink += fight.reward_ink()
+	return true
 
 ## Fights one encounter and reports how it ended.
 func _fight(
@@ -185,11 +283,12 @@ func _fight(
 	grid: Dictionary,
 	player_state: Dictionary,
 	activated_chains: Dictionary,
-	target: Vector2i
+	target: Vector2i,
+	depth: int
 ) -> FightOutcome:
 	var cell: Dictionary = _cell_at(grid, target)
 	var clue: Dictionary = ClueDatabase.get_clue(String(cell.get("clue_id", "")))
-	var enemy: Dictionary = EnemyDatabase.build_encounter(String(cell.get("enemy_id", "")), 1, 5)
+	var enemy: Dictionary = EnemyDatabase.build_encounter(String(cell.get("enemy_id", "")), depth, 5)
 
 	# A banked 6-letter chain reward solves the cell outright.
 	if int(player_state.get("skip_tokens", 0)) > 0:
@@ -201,6 +300,8 @@ func _fight(
 	encounters_fought += 1
 
 	var machine := CombatStateMachine.new()
+	var summaries: Array = []
+	machine.combat_finished.connect(func(summary): summaries.append(summary))
 	machine.setup(clue, enemy, player_state, null, target)
 	machine.begin()
 
@@ -209,7 +310,13 @@ func _fight(
 	var guard := 0
 	while not machine.is_finished() and guard < 32:
 		guard += 1
-		machine.submit_answer(_pick_answer(clue))
+		machine.submit_answer(_pick_answer(clue, machine))
+
+	if not summaries.is_empty():
+		_check_abilities(summaries[0], enemy, depth)
+		for effect in summaries[0].grid_effects:
+			if String(effect.type) == "swap_solved_letters":
+				letter_swaps += navigator.swap_solved_letters(int(effect.count)).size() / 2
 
 	if guard >= 32:
 		push_error("RandomBot: encounter did not terminate within 32 attempts")
@@ -357,10 +464,36 @@ func _check_economy() -> void:
 #----------------------------------------------------------------------------
 # HELPERS
 #----------------------------------------------------------------------------
-func _pick_answer(clue: Dictionary) -> String:
-	if randf() < CORRECT_ANSWER_CHANCE:
-		return String(clue.get("answer", ""))
-	return _random_word(String(clue.get("answer", "")).length())
+func _pick_answer(clue: Dictionary, machine: CombatStateMachine = null) -> String:
+	var answer := String(clue.get("answer", ""))
+	if randf() < _skill:
+		# A bot that knows the Palindrome has armed Mirror Input types the
+		# word backwards half the time, so the success path is exercised too.
+		if machine != null and machine._mirror_armed and randf() < 0.5:
+			return answer.reverse()
+		return answer
+	return _random_word(answer.length())
+
+## Boss rounds: mostly exact answers, sometimes the modern spelling of an
+## archaic one (accepted, but worth half), sometimes a miss.
+func _pick_boss_answer(clue: Dictionary) -> String:
+	var answer := String(clue.get("answer", ""))
+	if randf() >= minf(0.97, _skill + 0.1):
+		return _random_word(answer.length())
+	var alternates: Array = clue.get("alternates", [])
+	if not alternates.is_empty() and randf() < BOSS_MODERN_SPELLING_CHANCE:
+		return String(alternates[0].answer)
+	return answer
+
+## Abilities must only ever fire at or below an enemy's unlock depth, and every
+## report must name something real.
+func _check_abilities(summary: Dictionary, enemy: Dictionary, depth: int) -> void:
+	for info in summary.get("abilities_triggered", []):
+		var kind := String(info.get("kind", ""))
+		abilities_fired[kind] = int(abilities_fired.get(kind, 0)) + 1
+		var unlock := int(enemy.get("special_ability", {}).get("unlock_depth", 999))
+		_check(depth >= unlock, "%s fired at depth %d, before its unlock depth %d" % [kind, depth, unlock])
+		_check(String(info.get("message", "")) != "", "an ability announces itself")
 
 func _random_word(length: int) -> String:
 	const LETTERS := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -386,6 +519,14 @@ func _report() -> void:
 	print("Encounters abandoned:           %d" % encounters_abandoned)
 	print("Chains activated:               %d" % chains_activated)
 	print("Average moves per run:          %s" % str(snappedf(float(total_moves) / NUM_SIMULATIONS, 0.1)))
+	print("--- Milestone 4: floors, abilities, boss ---")
+	print("Floors cleared (all runs):      %d" % floors_cleared_total)
+	print("Deepest depth reached:          %d" % deepest_depth_reached)
+	print("Letter Swaps applied:           %d" % letter_swaps)
+	var fired := ", ".join(abilities_fired.keys().map(func(k): return "%s x%d" % [k, abilities_fired[k]]))
+	print("Abilities fired:                %s" % (fired if fired != "" else "none"))
+	print("Boss fights / wins / deaths:    %d / %d / %d" % [boss_fights, boss_wins, boss_deaths])
+	print("Boss rounds played:             %d (phases seen: %s)" % [boss_rounds_total, str(boss_phases_seen.keys())])
 	print("--- Lexicon career ---")
 	print("Vocabulary nodes bought:        %d" % nodes_bought)
 	print("Tomes bought:                   %d" % tomes_bought)

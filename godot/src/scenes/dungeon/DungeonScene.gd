@@ -2,9 +2,15 @@
 # DungeonScene.gd
 # Main dungeon scene. Owns the grid, the player's position, and the handoff
 # into and out of combat.
+# A run is a ladder of floors (Milestone 4): clear a grid, then descend - a new,
+# harder grid, with HP and Ink carried over - or cash out and bank the run.
+# Every 5th floor the boss (BossEncounter) guards the way down for a player
+# who has unlocked it. Dying anywhere ends the run as a loss.
+#
 # Dependencies: GridGenerator, GridNavigator, GridRenderer, CombatScene,
 #               ChainDetector, ChainEffects, ClueDatabase, EnemyDatabase,
-#               LexiconEffects, InkDropManager, RunSettlement, RunSummaryPanel
+#               LexiconEffects, InkDropManager, RunSettlement, RunSummaryPanel,
+#               FloorPanel, BossEncounter
 # Events: listens on EventBus; emits run_started / run_ended
 #============================================================================
 
@@ -39,6 +45,9 @@ var _grid_size: int = 5
 var _dungeon_depth: int = 1
 var _grid_cleared: bool = false
 var _summary_panel: RunSummaryPanel = null
+var _floor_panel: FloorPanel = null
+var _boss: BossEncounter = null
+var _boss_handled_depth: int = 0
 
 #----------------------------------------------------------------------------
 # BUILT-IN VIRTUAL METHODS
@@ -73,20 +82,14 @@ func _start_new_run() -> void:
 	var config: Dictionary = ConfigLoader.load_json(Constants.GAME_CONFIG_PATH)
 	var player_cfg: Dictionary = config.get("player", {})
 	_grid_size = _pick_grid_size(int(config.get("grid", {}).get("default_size", 5)))
-	_grid_cleared = false
+	_dungeon_depth = 1
+	_boss = null
+	_boss_handled_depth = 0
 
-	_generator = GridGenerator.new()
-	var grid_state: Dictionary = _generator.generate_grid(_grid_size, _dungeon_depth, 1)
-
-	_navigator = GridNavigator.new()
-	_navigator.initialize(grid_state)
-	_activated_chain_ids.clear()
-
-	var start_pos: Vector2i = _navigator.get_player_position()
 	var player_state: Dictionary = {
 		"current_hp": int(player_cfg.get("starting_hp", 100)),
 		"max_hp": int(player_cfg.get("starting_max_hp", 100)),
-		"position": {"x": start_pos.x, "y": start_pos.y},
+		"position": {"x": 0, "y": 0},
 		"active_chains": [],
 		"inventory": {"health_potions": 0, "dictionary_fragments": 0, "special_items": []},
 		"combo_streak": 0,
@@ -103,8 +106,9 @@ func _start_new_run() -> void:
 		"grid_size": _grid_size,
 		"dungeon_depth": _dungeon_depth,
 		"player_state": player_state,
-		"grid_state": grid_state,
+		"grid_state": {},
 		"combat_log": [],
+		"final_score": 0,
 		"tally": {
 			"words_solved": 0,
 			"letters_solved": 0,
@@ -113,21 +117,41 @@ func _start_new_run() -> void:
 			"chains_activated": 0,
 			"chains_by_length": {},
 			"longest_chain": 0,
+			"floors_cleared": 0,
+			"deepest_depth": 1,
 		},
 		"boss_encountered": false,
 		"boss_defeated": false,
 		"run_status": "in_progress",
 	}
 
-	_grid_renderer.initialize(grid_state)
-	_highlight_reachable()
-	_refresh_hud()
+	_start_floor()
 
 	EventBus.run_started.emit(
 		String(GameState.current_run.run_id),
 		String(GameState.current_run.difficulty),
 		_grid_size
 	)
+
+## Builds the grid for the current depth and puts the player at its entrance.
+func _start_floor() -> void:
+	_grid_cleared = false
+	_generator = GridGenerator.new()
+	var grid_state: Dictionary = _generator.generate_grid(_grid_size, _dungeon_depth, 1)
+
+	_navigator = GridNavigator.new()
+	_navigator.initialize(grid_state)
+	_activated_chain_ids.clear()
+
+	var start_pos: Vector2i = _navigator.get_player_position()
+	GameState.current_run["grid_state"] = grid_state
+	GameState.current_run["dungeon_depth"] = _dungeon_depth
+	_player_state()["position"] = {"x": start_pos.x, "y": start_pos.y}
+	_tally()["deepest_depth"] = maxi(int(_tally().get("deepest_depth", 1)), _dungeon_depth)
+
+	_grid_renderer.initialize(grid_state)
+	_highlight_reachable()
+	_refresh_hud()
 
 #----------------------------------------------------------------------------
 # PRIVATE METHODS - movement
@@ -213,6 +237,11 @@ func _on_combat_finished(result: Dictionary) -> void:
 		_tally()["enemies_defeated"] = int(_tally().get("enemies_defeated", 0)) + 1
 		_solve_and_advance(result.get("cell", Vector2i.ZERO), clue)
 		LexiconEffects.heal_for_solve(_player_state(), clue)
+
+	# What the enemy did to the map during the fight (the Anagram's Letter
+	# Swap) lands last, so it can scramble letters but not un-form a chain the
+	# solve above just paid out.
+	_apply_grid_effects(result.get("grid_effects", []))
 
 	# An encounter has ended either way, so per-encounter buffs tick down.
 	ChainEffects.expire_buffs(_player_state())
@@ -300,8 +329,10 @@ func _apply_grid_chain_effect(effect: Dictionary, chain: Dictionary) -> void:
 ## the last word's chains and rewards have resolved. So this only records the
 ## fact; _conclude_if_over settles the run once everything has been paid out.
 func _on_grid_completed(score: int, time_seconds: float) -> void:
-	GameState.current_run["final_score"] = score
-	GameState.current_run["duration_seconds"] = time_seconds
+	var run := GameState.current_run
+	run["final_score"] = int(run.get("final_score", 0)) + score
+	# Speed Demon is about clearing *a* dungeon quickly, so keep the best floor.
+	run["duration_seconds"] = minf(float(run.get("duration_seconds", INF)), time_seconds)
 	_grid_cleared = true
 
 ## Ends the run if the player died or the grid is cleared. Returns true if it
@@ -311,13 +342,149 @@ func _conclude_if_over(player_defeated: bool = false) -> bool:
 		_end_run(false)
 		return true
 	if _grid_cleared:
-		_end_run(true)
+		_on_floor_cleared()
 		return true
 	return false
+
+#----------------------------------------------------------------------------
+# PRIVATE METHODS - floors and the boss
+#----------------------------------------------------------------------------
+
+## A floor is clear: offer the way down, or the boss that guards it.
+func _on_floor_cleared() -> void:
+	var tally := _tally()
+	tally["floors_cleared"] = int(tally.get("floors_cleared", 0)) + 1
+	_is_input_locked = true
+	_show_floor_panel()
+
+func _boss_due() -> bool:
+	return (
+		_boss_handled_depth != _dungeon_depth
+		and BossEncounter.is_due(_dungeon_depth, int(GameState.player_profile.get("player_level", 1)))
+	)
+
+func _show_floor_panel() -> void:
+	var player_state := _player_state()
+	var run_ink := int(player_state.get("total_ink_drops_this_run", 0))
+	var heal_fraction := float(ConfigLoader.load_json(Constants.GAME_CONFIG_PATH).get("floors", {}).get("descent_heal_fraction", 0.0))
+	var lines: Array[String] = []
+	var primary := "Descend to depth %d" % (_dungeon_depth + 1)
+	var title := "Floor %d cleared" % _dungeon_depth
+
+	if _boss_due():
+		primary = "Face The Thesaurus"
+		title = "The way down is guarded"
+		lines.append("The Thesaurus blocks the stairs. Beat it to descend.")
+	else:
+		lines.append("Descending heals %d%% of your max HP. Deeper foes hit harder and wake new abilities." % int(round(heal_fraction * 100.0)))
+		lines.append("Cash out now to bank this run safely.")
+
+	_floor_panel = FloorPanel.new()
+	_ui_layer.add_child(_floor_panel)
+	_floor_panel.show_floor({
+		"title": title,
+		"depth": _dungeon_depth,
+		"hp": int(player_state.get("current_hp", 0)),
+		"max_hp": int(player_state.get("max_hp", 0)),
+		"run_ink": run_ink,
+		"cash_out_ink": int(InkDropManager.settle_run_ink(run_ink, true, player_state.get("loadout", {})).total),
+		"primary_text": primary,
+		"lines": lines,
+	})
+	_floor_panel.primary_pressed.connect(_on_floor_primary_pressed)
+	_floor_panel.cash_out_pressed.connect(_on_cash_out_pressed)
+
+func _close_floor_panel() -> void:
+	if _floor_panel != null:
+		_floor_panel.queue_free()
+		_floor_panel = null
+
+func _on_floor_primary_pressed() -> void:
+	_close_floor_panel()
+	if _boss_due():
+		_begin_boss_fight()
+	else:
+		_descend()
+
+func _on_cash_out_pressed() -> void:
+	_close_floor_panel()
+	_end_run(true)
+
+## Goes one floor deeper: a new grid, HP carried over plus a partial heal.
+func _descend() -> void:
+	var player_state := _player_state()
+	var heal_fraction := float(ConfigLoader.load_json(Constants.GAME_CONFIG_PATH).get("floors", {}).get("descent_heal_fraction", 0.0))
+	var max_hp := int(player_state.get("max_hp", 100))
+	player_state["current_hp"] = mini(max_hp, int(player_state.get("current_hp", 0)) + int(round(max_hp * heal_fraction)))
+	_dungeon_depth += 1
+	_start_floor()
+	_is_input_locked = false
+
+func _begin_boss_fight() -> void:
+	_boss_handled_depth = _dungeon_depth
+	GameState.current_run["boss_encountered"] = true
+	_boss = BossEncounter.begin(_dungeon_depth, _grid_size)
+	_start_boss_round()
+
+func _start_boss_round() -> void:
+	_combat_scene = AssetRegistry.instantiate_scene(COMBAT_SCENE_PATH) as CombatScene
+	if _combat_scene == null:
+		# Never strand the player (CLAUDE.md 5.3): skip the boss.
+		push_error("DungeonScene: could not load %s" % COMBAT_SCENE_PATH)
+		_boss = null
+		_show_floor_panel()
+		return
+	_combat_scene.combat_finished.connect(_on_boss_round_finished, CONNECT_ONE_SHOT)
+	_ui_layer.add_child(_combat_scene)
+	_combat_scene.start_encounter(
+		_boss.next_round_clue(), _boss.boss, _player_state(), Vector2i.ZERO,
+		{"round_mode": true, "banner": _boss.phase_label()}
+	)
+
+func _on_boss_round_finished(result: Dictionary) -> void:
+	if _combat_scene != null:
+		_combat_scene.queue_free()
+		_combat_scene = null
+	GameState.current_run.combat_log.append({
+		"timestamp": _iso_timestamp(),
+		"enemy_id": String(result.get("enemy_id", "")),
+		"clue_id": String(result.get("clue_id", "")),
+		"answer": String(result.get("answer", "")),
+		"damage_dealt": int(result.get("damage_dealt", 0)),
+		"damage_taken": int(result.get("damage_taken", 0)),
+		"attempts": int(result.get("attempts_used", 1)),
+		"victory": bool(result.get("victory", false)),
+	})
+	_boss.finish_round(result)
+	_refresh_hud()
+
+	if _boss.player_died:
+		_end_run(false)
+	elif _boss.is_won():
+		_tally()["bosses_defeated"] = int(_tally().get("bosses_defeated", 0)) + 1
+		GameState.current_run["boss_defeated"] = true
+		_add_run_ink(_boss.reward_ink())
+		ChainEffects.expire_buffs(_player_state())
+		_boss = null
+		_show_floor_panel()
+	elif _boss.abandoned:
+		# The backstop ran out: the boss lets you pass rather than looping forever.
+		_boss = null
+		_show_floor_panel()
+	else:
+		_start_boss_round()
+
+## Carries out grid-level enemy effects reported by a finished fight.
+func _apply_grid_effects(effects: Array) -> void:
+	for effect in effects:
+		if String(effect.get("type", "")) == "swap_solved_letters":
+			for pos in _navigator.swap_solved_letters(int(effect.get("count", 0))):
+				_grid_renderer.update_cell(pos)
 
 func _end_run(completed: bool) -> void:
 	if String(GameState.current_run.get("run_status", "")) != "in_progress":
 		return
+	_close_floor_panel()
 	GameState.current_run["run_status"] = "completed" if completed else "failed"
 	_is_input_locked = true
 
@@ -400,7 +567,8 @@ func _refresh_hud() -> void:
 	if label == null or not GameState.has_active_run():
 		return
 	var player_state: Dictionary = _player_state()
-	label.text = "HP %d/%d   |   Ink this run: %d   |   Level %d" % [
+	label.text = "Depth %d   |   HP %d/%d   |   Ink this run: %d   |   Level %d" % [
+		_dungeon_depth,
 		int(player_state.get("current_hp", 0)),
 		int(player_state.get("max_hp", 0)),
 		int(player_state.get("total_ink_drops_this_run", 0)),

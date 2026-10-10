@@ -14,6 +14,7 @@ func run(_host: Node) -> void:
 	_test_defeated_run()
 	_test_level_up_and_unlocks()
 	_test_accumulation_across_runs()
+	_test_depth_and_boss()
 	_test_missing_data_is_tolerated()
 
 func _run_dict(base_ink: int, tally: Dictionary = {}, extra: Dictionary = {}) -> Dictionary:
@@ -113,6 +114,29 @@ func _test_accumulation_across_runs() -> void:
 	assert_eq(int(w.profile.total_ink_drops), expected_lifetime, "lifetime Ink is exactly the sum of every payout")
 	assert_eq(int(w.profile.ink_drops), expected_lifetime, "and with nothing spent, the balance matches it")
 	assert_true(int(w.profile.ink_drops) <= int(w.profile.total_ink_drops), "the balance never exceeds lifetime Ink")
+
+func _test_depth_and_boss() -> void:
+	var w := _world()
+	RunSettlement.settle(w.profile, w.lexicon, w.statistics, _run_dict(10, { "floors_cleared": 3, "deepest_depth": 4 }), true)
+	assert_eq(int(w.profile.deepest_depth), 4, "the deepest depth reached is recorded")
+	assert_eq(int(w.statistics.total_floors_cleared), 3, "floors cleared accumulate")
+	assert_false(AchievementTracker.is_earned(w.lexicon, "deep_diver"), "depth 4 is not Deep Diver")
+
+	RunSettlement.settle(w.profile, w.lexicon, w.statistics, _run_dict(10, { "floors_cleared": 1, "deepest_depth": 2 }), true)
+	assert_eq(int(w.profile.deepest_depth), 4, "a shallower later run never lowers the record")
+	assert_eq(int(w.statistics.total_floors_cleared), 4, "but its floors still count")
+
+	RunSettlement.settle(w.profile, w.lexicon, w.statistics, _run_dict(10, { "floors_cleared": 4, "deepest_depth": 5 }), false)
+	assert_true(AchievementTracker.is_earned(w.lexicon, "deep_diver"), "reaching depth 5 earns Deep Diver, even in a lost run")
+	assert_false(AchievementTracker.is_earned(w.lexicon, "thesaurus_slayer"), "and there is no Slayer without a kill")
+
+	var summary := RunSettlement.settle(w.profile, w.lexicon, w.statistics, _run_dict(10, { "bosses_defeated": 1, "deepest_depth": 5 }), true)
+	assert_true(AchievementTracker.is_earned(w.lexicon, "thesaurus_slayer"), "beating the boss earns Thesaurus Slayer")
+	var earned: Array = []
+	for entry in summary.achievements:
+		earned.append(String(entry.id))
+	assert_true(earned.has("thesaurus_slayer"), "and the summary reports it")
+	assert_eq(int(w.statistics.total_bosses_defeated), 1, "the kill is on the lifetime statistics")
 
 func _test_missing_data_is_tolerated() -> void:
 	var w := _world()

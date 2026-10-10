@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_note": "Vocabulary Trees (Design Doc 4.5, Technical Design Doc 2.4). One tree per clue category in clues_master.json - see docs/adr/002-vocabulary-trees-follow-clue-categories.md for why these are not the Science/History/Arts/Nature trees the design doc names. Supported effect types: damage_multiplier, timer_bonus, heal_on_solve, ink_bonus (per letter), chain_duration, chain_bonus (ink per chain), damage_reduction. Only max_rank 1 is supported. Prerequisites must form a DAG.",
+  "_note": "Vocabulary Trees (Design Doc 4.5, Technical Design Doc 2.4). One tree per clue category in clues_master.json (seven since Milestone 4 added GAME_JARGON) - see docs/adr/002-vocabulary-trees-follow-clue-categories.md for why these are not the Science/History/Arts/Nature trees the design doc names. Supported effect types: damage_multiplier, timer_bonus, heal_on_solve, ink_bonus (per letter), chain_duration, chain_bonus (ink per chain), damage_reduction. Only max_rank 1 is supported. Prerequisites must form a DAG.",
   "vocabulary_trees": {
     "bestiary": {
       "tree_id": "bestiary",
@@ -80,6 +80,19 @@
         { "node_id": "sen_01", "name": "Empathy", "description": "+10% damage for emotion and abstract answers", "cost": 200, "prerequisites": [], "effects": [ { "type": "damage_multiplier", "category": "EMOTIONS_ABSTRACT", "value": 1.1, "scope": "combat" } ], "max_rank": 1, "icon": "node_sen_01" },
         { "node_id": "sen_02", "name": "Calm Mind", "description": "+5 seconds on emotion and abstract clue timers", "cost": 300, "prerequisites": ["sen_01"], "effects": [ { "type": "timer_bonus", "category": "EMOTIONS_ABSTRACT", "value": 5, "scope": "combat" } ], "max_rank": 1, "icon": "node_sen_02" },
         { "node_id": "sen_03", "name": "Resonance", "description": "Every chain grants +10 Ink Drops", "cost": 500, "prerequisites": ["sen_02"], "effects": [ { "type": "chain_bonus", "value": 10, "scope": "combo" } ], "max_rank": 1, "icon": "node_sen_03" }
+      ]
+    },
+    "metagame": {
+      "tree_id": "metagame",
+      "tree_name": "Metagame",
+      "tree_description": "Speak the language of the table.",
+      "tree_icon": "icon_tree_metagame",
+      "tree_color": "#35B6C9",
+      "category": "GAME_JARGON",
+      "nodes": [
+        { "node_id": "jar_01", "name": "Min-Maxing", "description": "+10% damage for game-jargon answers", "cost": 200, "prerequisites": [], "effects": [ { "type": "damage_multiplier", "category": "GAME_JARGON", "value": 1.1, "scope": "combat" } ], "max_rank": 1, "icon": "node_jar_01" },
+        { "node_id": "jar_02", "name": "Cooldown Mastery", "description": "+5 seconds on game-jargon clue timers", "cost": 300, "prerequisites": ["jar_01"], "effects": [ { "type": "timer_bonus", "category": "GAME_JARGON", "value": 5, "scope": "combat" } ], "max_rank": 1, "icon": "node_jar_02" },
+        { "node_id": "jar_03", "name": "Loot Goblin", "description": "+2 Ink Drops per letter of game-jargon answers", "cost": 500, "prerequisites": ["jar_02"], "effects": [ { "type": "ink_bonus", "category": "GAME_JARGON", "value": 2, "scope": "run" } ], "max_rank": 1, "icon": "node_jar_03" }
       ]
     }
   }

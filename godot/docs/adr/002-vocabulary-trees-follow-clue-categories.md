@@ -41,6 +41,14 @@ tree targets a category that does not exist in `Constants.CATEGORIES`, if two
 trees share a category, or if a category has no tree - so this mapping cannot
 silently rot as clues are added.
 
+## Update (Milestone 4)
+
+Milestone 4 added a seventh clue category, `GAME_JARGON` (abbreviations such as NPC
+and RPG, needed for the Acronym's weakness - see ADR-004), so there is now a
+seventh tree, **Metagame**, with 3 nodes: 7 trees and 23 nodes in total. The
+"one tree per category" tests picked it up automatically; the node-count check
+was loosened from exactly 20 to at least 20.
+
 ## Consequences
 
 Positive:

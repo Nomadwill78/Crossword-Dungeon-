@@ -90,6 +90,7 @@ static func calculate_damage(
 		"enemy_defeated": false,
 		"weakness_hit": false,
 		"resistance_hit": false,
+		"alternate_hit": false,
 		"answer": normalized,
 	}
 
@@ -123,20 +124,29 @@ static func calculate_damage(
 	multipliers *= get_chain_buff_multiplier(player_state)
 
 	# Enemy weakness / resistance (data-driven, see enemies_master.json).
-	if matches_weakness(normalized, enemy):
+	if matches_weakness(normalized, enemy, clue):
 		multipliers *= float(enemy.weakness.get("bonus_multiplier", 1.0))
 		result.weakness_hit = true
-	elif matches_resistance(normalized, enemy):
+	elif matches_resistance(normalized, enemy, clue):
 		multipliers *= float(enemy.resistance.get("penalty_multiplier", 1.0))
 		result.resistance_hit = true
+
+	# An accepted alternate answer (the boss's modern-spelling fallback) is
+	# right, but worth only its clue-supplied fraction of the damage.
+	var alternate := ClueResolver.alternate_for(normalized, clue)
+	if not alternate.is_empty():
+		multipliers *= float(alternate.get("damage_multiplier", 0.5))
+		result.alternate_hit = true
 
 	result.damage_dealt = int(floor(total_base_damage * multipliers))
 
 	var current_hp: int = int(enemy.get("current_hp", enemy.get("base_hp", 0)))
 	if result.damage_dealt >= current_hp:
 		result.enemy_defeated = true
-	else:
-		# Still standing, so it counter-attacks.
+	elif not bool(enemy.get("no_counter_on_hit", false)):
+		# Still standing, so it counter-attacks. (Bosses fight many rounds
+		# against one HP pool and only strike on a miss; see no_counter_on_hit
+		# in enemies_master.json.)
 		result.damage_taken = calculate_enemy_damage(enemy, player_state)
 
 	return result
@@ -158,13 +168,15 @@ static func calculate_enemy_damage(enemy: Dictionary, player_state: Dictionary) 
 	return maxi(0, int(floor(raw * (1.0 - reduction))))
 
 ## True when [param answer] satisfies the enemy's weakness rule. A null
-## weakness (see enemies_master.json weakness_pending notes) never matches.
-static func matches_weakness(answer: String, enemy: Dictionary) -> bool:
-	return _matches_rule(answer, enemy.get("weakness", null))
+## weakness never matches.
+## [param clue] is only needed for rules that read the clue's tags (clue_tag /
+## not_clue_tag); word_property rules work from the answer alone.
+static func matches_weakness(answer: String, enemy: Dictionary, clue: Dictionary = {}) -> bool:
+	return _matches_rule(answer, enemy.get("weakness", null), clue)
 
 ## True when [param answer] satisfies the enemy's resistance rule.
-static func matches_resistance(answer: String, enemy: Dictionary) -> bool:
-	return _matches_rule(answer, enemy.get("resistance", null))
+static func matches_resistance(answer: String, enemy: Dictionary, clue: Dictionary = {}) -> bool:
+	return _matches_rule(answer, enemy.get("resistance", null), clue)
 
 ## Vocabulary-tree damage bonus for [param category], from
 ## player_state.category_multipliers (1.0 for a category with no bonus).
@@ -187,13 +199,20 @@ static func get_chain_buff_multiplier(player_state: Dictionary) -> float:
 #----------------------------------------------------------------------------
 # PRIVATE METHODS
 #----------------------------------------------------------------------------
-static func _matches_rule(answer: String, rule) -> bool:
+static func _matches_rule(answer: String, rule, clue: Dictionary) -> bool:
 	if rule == null or typeof(rule) != TYPE_DICTIONARY:
 		return false
-	if String(rule.get("type", "")) != "word_property":
-		# Only word-property rules are computable from the answer alone.
-		return false
-	return WordProperties.has_property(answer, String(rule.get("property", "")))
+	match String(rule.get("type", "")):
+		"word_property":
+			return WordProperties.has_property(answer, String(rule.get("property", "")))
+		"clue_tag":
+			return ClueResolver.has_tag(clue, String(rule.get("tag", "")))
+		"not_clue_tag":
+			# Without a clue there is nothing to inspect; "lacks the tag"
+			# must not default to true and become an always-on bonus.
+			return not clue.is_empty() and not ClueResolver.has_tag(clue, String(rule.get("tag", "")))
+	# Other types (the boss's exact_match) are handled where they apply, not here.
+	return false
 
 static func _combat_config() -> Dictionary:
 	return ConfigLoader.load_json(Constants.GAME_CONFIG_PATH).get("combat", {})

@@ -6,6 +6,8 @@
     { "achievement_id": "first_chain", "name": "Linked Letters", "description": "Activate your first vocabulary chain.", "condition": { "type": "stat_at_least", "stat": "total_chains", "value": 1 }, "reward_ink": 25 },
     { "achievement_id": "speed_demon", "name": "Speed Demon", "description": "Clear a dungeon in under three minutes.", "condition": { "type": "run_completed_faster_than", "value": 180 }, "reward_ink": 100 },
     { "achievement_id": "vocabulary_master", "name": "Vocabulary Master", "description": "Purchase every node in a single Vocabulary Tree.", "condition": { "type": "tree_fully_purchased" }, "reward_ink": 200 },
-    { "achievement_id": "grandmaster", "name": "Grandmaster", "description": "Reach player level 50.", "condition": { "type": "player_level", "value": 50 }, "reward_ink": 500 }
+    { "achievement_id": "grandmaster", "name": "Grandmaster", "description": "Reach player level 50.", "condition": { "type": "player_level", "value": 50 }, "reward_ink": 500 },
+    { "achievement_id": "deep_diver", "name": "Deep Diver", "description": "Reach depth 5 in a single run.", "condition": { "type": "stat_at_least", "stat": "deepest_depth", "value": 5 }, "reward_ink": 50 },
+    { "achievement_id": "thesaurus_slayer", "name": "Thesaurus Slayer", "description": "Defeat The Thesaurus.", "condition": { "type": "stat_at_least", "stat": "total_bosses_defeated", "value": 1 }, "reward_ink": 300 }
   ]
 }

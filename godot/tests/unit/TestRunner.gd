@@ -64,6 +64,9 @@ func _suites() -> Array[TestSuite]:
 		TestLexiconEffects.new(),
 		TestRunSettlement.new(),
 		TestSaveManager.new(),
+		TestEnemyData.new(),
+		TestEnemyAbilities.new(),
+		TestBossEncounter.new(),
 		TestLexiconScenes.new(),
 		TestPerformance.new(),
 	]
