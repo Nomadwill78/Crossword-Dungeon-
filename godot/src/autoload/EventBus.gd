@@ -51,6 +51,14 @@ signal dictionary_fragment_gained(total: int)
 signal vocabulary_word_unlocked(word: String)
 signal item_collected(item_id: String)
 signal level_up(new_level: int)
+## Technical Design Doc 3.5 names these two for the Ink Drop ledger.
+## ink_drops_changed (above) still fires alongside them with the new balance.
+signal ink_drops_earned(amount: int, source: String)
+signal ink_drops_spent(amount: int, item: String)
+signal vocabulary_node_purchased(tree_id: String, node_id: String)
+signal tome_purchased(tome_id: String)
+signal tome_equipped(slot: int, tome_id: String)
+signal achievement_unlocked(achievement_id: String)
 
 # --- Meta / system ---
 signal save_completed(slot: String)

@@ -114,10 +114,12 @@ static func calculate_damage(
 		float(combat_cfg.get("time_bonus_max", 2.0))
 	)
 
-	# Meta-progression multipliers. These read player_state and default to 1.0
-	# while the Lexicon (Milestone 3) has not populated them yet.
+	# Meta-progression multipliers. LexiconEffects.apply_to_player_state fills
+	# these in from the Lexicon at run start; each defaults to 1.0 without it.
 	multipliers *= get_category_multiplier(String(clue.get("category", "")), player_state)
 	multipliers *= get_tome_multiplier("combat", player_state)
+	if attempt_number == 1:
+		multipliers *= get_tome_multiplier("combat_first_attempt", player_state)
 	multipliers *= get_chain_buff_multiplier(player_state)
 
 	# Enemy weakness / resistance (data-driven, see enemies_master.json).
@@ -164,14 +166,14 @@ static func matches_weakness(answer: String, enemy: Dictionary) -> bool:
 static func matches_resistance(answer: String, enemy: Dictionary) -> bool:
 	return _matches_rule(answer, enemy.get("resistance", null))
 
-## Vocabulary-tree damage bonus for [param category]. Milestone 3 populates
-## player_state.category_multipliers; until then every category is 1.0.
+## Vocabulary-tree damage bonus for [param category], from
+## player_state.category_multipliers (1.0 for a category with no bonus).
 static func get_category_multiplier(category: String, player_state: Dictionary) -> float:
 	var multipliers: Dictionary = player_state.get("category_multipliers", {})
 	return float(multipliers.get(category, 1.0))
 
-## Equipped-tome bonus for [param scope] ("combat", "combo", ...).
-## Milestone 3 populates player_state.tome_multipliers.
+## Equipped-tome bonus for [param scope] ("combat" on every answer,
+## "combat_first_attempt" on first tries), from player_state.tome_multipliers.
 static func get_tome_multiplier(scope: String, player_state: Dictionary) -> float:
 	var multipliers: Dictionary = player_state.get("tome_multipliers", {})
 	return float(multipliers.get(scope, 1.0))

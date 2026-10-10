@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "_note": "Tomes (Design Doc 4.5, Technical Design Doc 2.5). A tome is locked until its unlock_condition is met, then bought once with Ink Drops (cost), then equipped into one of progression.tome_slots slots. Supported effect types: post_combat_heal (percentage_max_hp, fires once per solved word), first_attempt_bonus (damage_multiplier), damage_bonus (damage_multiplier), timer_bonus (seconds), ink_multiplier, max_hp_bonus, damage_reduction. Supported unlock_condition types: player_level, achievement.",
+  "tomes": [
+    {
+      "tome_id": "tome_healing_01",
+      "name": "Tome of Restoration",
+      "description": "Heal 5% of max HP after each word you solve.",
+      "rarity": "common",
+      "slot": "passive",
+      "effects": [ { "type": "post_combat_heal", "trigger": "combat_won", "value": 0.05, "value_type": "percentage_max_hp" } ],
+      "unlock_condition": { "type": "player_level", "value": 3 },
+      "cost": 300,
+      "icon": "tome_healing_01"
+    },
+    {
+      "tome_id": "tome_damage_01",
+      "name": "Tome of Precision",
+      "description": "+15% damage on first-attempt answers.",
+      "rarity": "uncommon",
+      "slot": "passive",
+      "effects": [ { "type": "first_attempt_bonus", "trigger": "combat_first_attempt", "value": 1.15, "value_type": "damage_multiplier" } ],
+      "unlock_condition": { "type": "achievement", "value": "first_chain" },
+      "cost": 500,
+      "icon": "tome_damage_01"
+    },
+    {
+      "tome_id": "tome_timer_01",
+      "name": "Tome of Patience",
+      "description": "+5 seconds on every clue timer.",
+      "rarity": "common",
+      "slot": "passive",
+      "effects": [ { "type": "timer_bonus", "trigger": "combat_start", "value": 5, "value_type": "seconds" } ],
+      "unlock_condition": { "type": "player_level", "value": 5 },
+      "cost": 350,
+      "icon": "tome_timer_01"
+    },
+    {
+      "tome_id": "tome_ink_01",
+      "name": "Tome of Fortune",
+      "description": "+15% Ink Drops from every run.",
+      "rarity": "uncommon",
+      "slot": "passive",
+      "effects": [ { "type": "ink_multiplier", "trigger": "run_end", "value": 1.15, "value_type": "multiplier" } ],
+      "unlock_condition": { "type": "player_level", "value": 8 },
+      "cost": 600,
+      "icon": "tome_ink_01"
+    },
+    {
+      "tome_id": "tome_vitality_01",
+      "name": "Tome of Vigor",
+      "description": "+25 max HP at the start of every run.",
+      "rarity": "uncommon",
+      "slot": "passive",
+      "effects": [ { "type": "max_hp_bonus", "trigger": "run_start", "value": 25, "value_type": "flat" } ],
+      "unlock_condition": { "type": "player_level", "value": 10 },
+      "cost": 650,
+      "icon": "tome_vitality_01"
+    },
+    {
+      "tome_id": "tome_ward_01",
+      "name": "Tome of Warding",
+      "description": "Take 15% less damage from enemies.",
+      "rarity": "rare",
+      "slot": "passive",
+      "effects": [ { "type": "damage_reduction", "trigger": "enemy_attack", "value": 0.15, "value_type": "fraction" } ],
+      "unlock_condition": { "type": "player_level", "value": 15 },
+      "cost": 900,
+      "icon": "tome_ward_01"
+    },
+    {
+      "tome_id": "tome_might_01",
+      "name": "Tome of Might",
+      "description": "+10% damage on every answer.",
+      "rarity": "rare",
+      "slot": "passive",
+      "effects": [ { "type": "damage_bonus", "trigger": "combat", "value": 1.1, "value_type": "damage_multiplier" } ],
+      "unlock_condition": { "type": "player_level", "value": 20 },
+      "cost": 1200,
+      "icon": "tome_might_01"
+    }
+  ]
+}
