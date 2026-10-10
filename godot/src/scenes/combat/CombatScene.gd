@@ -36,6 +36,8 @@ signal combat_finished(result: Dictionary)
 #----------------------------------------------------------------------------
 # ONREADY VARIABLES
 #----------------------------------------------------------------------------
+@onready var _phase_banner: Label = %PhaseBanner
+@onready var _ability_notice: Label = %AbilityNotice
 @onready var _enemy_name: Label = %EnemyName
 @onready var _enemy_flavor: Label = %EnemyFlavor
 @onready var _enemy_hp_bar: ProgressBar = %EnemyHpBar
@@ -91,7 +93,7 @@ func _ready() -> void:
 	if not _pending.is_empty():
 		var pending := _pending
 		_pending = {}
-		start_encounter(pending.clue, pending.enemy, pending.player_state, pending.cell)
+		start_encounter(pending.clue, pending.enemy, pending.player_state, pending.cell, pending.options)
 
 #----------------------------------------------------------------------------
 # PUBLIC METHODS
@@ -99,22 +101,34 @@ func _ready() -> void:
 
 ## Begins an encounter. [param player_state] is mutated in place as the player
 ## takes damage, so the caller sees HP changes without a round trip.
+##
+## [param options] Optional: `round_mode` (bool) makes this one round of a
+## longer fight - a correct answer ends the round with the enemy still
+## standing; `banner` (String) is a line shown above the enemy's name, used for
+## the boss's phase.
 func start_encounter(
 	clue: Dictionary,
 	enemy: Dictionary,
 	player_state: Dictionary,
-	cell_pos: Vector2i = Vector2i.ZERO
+	cell_pos: Vector2i = Vector2i.ZERO,
+	options: Dictionary = {}
 ) -> void:
 	if not is_node_ready():
-		_pending = {"clue": clue, "enemy": enemy, "player_state": player_state, "cell": cell_pos}
+		_pending = {"clue": clue, "enemy": enemy, "player_state": player_state, "cell": cell_pos, "options": options}
 		return
 
 	_player_state = player_state
 	_log_lines.clear()
+	_phase_banner.text = String(options.get("banner", ""))
+	_phase_banner.visible = _phase_banner.text != ""
+	_ability_notice.text = ""
 
 	_machine = CombatStateMachine.new()
+	_machine.round_mode = bool(options.get("round_mode", false))
 	_machine.attempt_resolved.connect(_on_attempt_resolved)
 	_machine.combat_finished.connect(_on_combat_finished)
+	_machine.prompt_changed.connect(_on_prompt_changed)
+	_machine.ability_triggered.connect(_on_ability_triggered)
 	_machine.setup(clue, enemy, player_state, _timer_system, cell_pos)
 
 	_show_clue(clue, enemy)
@@ -132,12 +146,18 @@ func start_encounter(
 func _show_clue(clue: Dictionary, enemy: Dictionary) -> void:
 	_enemy_name.text = String(enemy.get("display_name", enemy.get("name", "Enemy")))
 	_enemy_flavor.text = String(enemy.get("flavor_text", ""))
-	_clue_text.text = String(clue.get("clue_text", clue.get("clue", "")))
+	# The machine's prompt, not the clue's text: an ability may already have
+	# garbled or blended it during the reveal.
+	_clue_text.text = _machine.get_prompt()
 
 	var length: int = int(clue.get("answer_length", clue.get("length", 0)))
-	var category := String(clue.get("category", "")).capitalize()
+	var category := String(clue.get("category", "")).replace("_", " ").capitalize()
 	_clue_meta.text = "%d letters   -   %s" % [length, category]
-	_answer_input.max_length = length
+	# An accepted alternate spelling can be longer than the demanded one.
+	var longest := length
+	for alternate in clue.get("alternates", []):
+		longest = maxi(longest, String(alternate.get("answer", "")).length())
+	_answer_input.max_length = longest
 	_answer_input.text = ""
 
 func _set_input_enabled(enabled: bool) -> void:
@@ -168,6 +188,9 @@ func _on_answer_submitted(text: String) -> void:
 func _on_attempt_resolved(result: Dictionary) -> void:
 	_answer_input.text = ""
 
+	if bool(result.get("mirrored", false)):
+		_append_log("Your answer was read backwards!")
+
 	if bool(result.get("timed_out", false)):
 		_append_log("Out of time! You take %d damage." % int(result.damage_taken))
 	elif bool(result.is_correct):
@@ -176,6 +199,8 @@ func _on_attempt_resolved(result: Dictionary) -> void:
 			line = "Weakness! " + line
 		elif bool(result.get("resistance_hit", false)):
 			line = "Resisted. " + line
+		if bool(result.get("alternate_hit", false)):
+			line += " (Only the old spelling lands in full.)"
 		if int(result.get("damage_taken", 0)) > 0:
 			line += " It strikes back for %d." % int(result.damage_taken)
 		_append_log(line)
@@ -198,7 +223,9 @@ func _on_combat_finished(result: Dictionary) -> void:
 	_timer_bar.value = 0.0
 	_timer_label.text = ""
 
-	if bool(result.victory):
+	if bool(result.victory) and not bool(result.get("enemy_dead", true)):
+		_append_log("Round cleared.")
+	elif bool(result.victory):
 		_append_log("Defeated! The letters are yours.")
 	elif bool(result.player_defeated):
 		_append_log("You fall. The dungeon keeps its word.")
@@ -208,6 +235,13 @@ func _on_combat_finished(result: Dictionary) -> void:
 	_refresh_enemy_hp()
 	_refresh_player_hp()
 	combat_finished.emit(result)
+
+func _on_prompt_changed(text: String) -> void:
+	_clue_text.text = text
+
+func _on_ability_triggered(info: Dictionary) -> void:
+	_ability_notice.text = String(info.get("message", ""))
+	_append_log(String(info.get("message", "")))
 
 func _on_timer_warning(threshold: float) -> void:
 	_append_log("%d%% of your time is gone." % int(round((1.0 - threshold) * 100.0)))

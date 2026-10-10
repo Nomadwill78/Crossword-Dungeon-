@@ -36,19 +36,42 @@ static func normalize(raw_answer: String) -> String:
 ##   length_matches    - bool, right number of letters (useful for UI hints
 ##                       like "5 letters" turning green before submission)
 ##   is_empty          - bool, nothing usable was typed
+##   alternate         - Dictionary, the matching entry of clue.alternates when
+##                       the answer was accepted as an alternate rather than
+##                       the exact answer; {} otherwise
 static func validate(raw_answer: String, clue: Dictionary) -> Dictionary:
 	var normalized := normalize(raw_answer)
 	var expected := String(clue.get("answer", "")).to_upper()
 	var expected_length: int = int(clue.get("answer_length", clue.get("length", expected.length())))
+	var alternate := alternate_for(normalized, clue)
 
 	return {
-		"is_correct": normalized != "" and normalized == expected,
+		"is_correct": normalized != "" and (normalized == expected or not alternate.is_empty()),
+		"alternate": alternate,
 		"normalized": normalized,
 		"expected": expected,
 		"expected_length": expected_length,
 		"length_matches": normalized.length() == expected_length,
 		"is_empty": normalized.is_empty(),
 	}
+
+## The entry of [param clue].alternates that [param normalized] matches, or {}.
+## An alternate is an extra accepted answer - { answer, damage_multiplier } -
+## that is not the exact one. The boss's archaic-spelling phase uses it: the
+## modern spelling is still right, but deals reduced damage. The exact answer
+## never counts as an alternate.
+static func alternate_for(normalized: String, clue: Dictionary) -> Dictionary:
+	if normalized == "" or normalized == String(clue.get("answer", "")).to_upper():
+		return {}
+	for entry in clue.get("alternates", []):
+		if normalize(String(entry.get("answer", ""))) == normalized:
+			return entry
+	return {}
+
+## True when [param clue] carries [param tag] in its `tags` list
+## (clues_master.json tags clues as compound, homophone or abbreviation).
+static func has_tag(clue: Dictionary, tag: String) -> bool:
+	return Array(clue.get("tags", [])).has(tag)
 
 ## How many letters of [param raw_answer] are in the right position. Not used
 ## for damage; exposed for UI feedback and for bots that want a "warmer /

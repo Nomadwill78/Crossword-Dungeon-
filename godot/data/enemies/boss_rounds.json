@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "_note": "Content for The Thesaurus's three phases (enemies_master.json bosses[0].phases). synonym_variants (phase 1, synonym_swap): clue id -> a reworded clue shown after the player's first miss. antonym_pairs (phase 2, antonym_inversion): the clue of one id is shown as 'the opposite of ...' and the other id's answer is expected, in both directions. A clue may appear in at most one pair, so a prompt never has two different right answers. archaic_spellings (phase 3, obscure_variant): the archaic spelling is the full-damage answer; the modern spelling is still accepted but deals the boss's exact-match penalty (weakness.penalty_multiplier). Every id must exist in clues_master.json.",
+  "prompts": {
+    "antonym": "Reversed! Name the OPPOSITE of: %s",
+    "archaic": "%s (Archaic: spell it as it was written long ago)"
+  },
+  "synonym_variants": {
+    "clue_029_ghoul": "Undead scavenger that feasts on the dead",
+    "clue_030_troll": "Giant that heals its wounds in caves",
+    "clue_031_witch": "Brewer of curses and hexes",
+    "clue_033_sword": "A knight's classic steel",
+    "clue_034_spear": "Piercing weapon on a long pole",
+    "clue_035_crypt": "Burial vault under a church",
+    "clue_036_tower": "High turret that watches over the dungeon",
+    "clue_037_sewer": "Filthy drain-tunnel under the town",
+    "clue_038_grave": "Burial plot for the departed",
+    "clue_039_storm": "Violent weather of thunder and downpour",
+    "clue_041_flame": "One lick of fire",
+    "clue_042_grief": "Heavy sorrow following a loss",
+    "clue_045_goblin": "Small green menace with a mocking laugh",
+    "clue_046_dragon": "Winged, flame-breathing treasure hoarder",
+    "clue_047_spider": "Web-spinner with eight legs",
+    "clue_048_wizard": "Robed spellcaster in a pointy hat",
+    "clue_049_potion": "Healing liquid in a glass vial",
+    "clue_051_oracle": "Seer who predicts what is to come",
+    "clue_052_helmet": "Armor for the head",
+    "clue_053_dagger": "A rogue's short knife",
+    "clue_054_castle": "A noble family's fortified residence",
+    "clue_058_forest": "Thick woods hiding many secrets",
+    "clue_059_shadow": "Dark shape cast when light is blocked",
+    "clue_064_dungeon": "Maze of rooms swarming with monsters",
+    "clue_067_banshee": "Keening ghost that warns of a death",
+    "clue_068_vampire": "Fanged aristocrat of the night",
+    "clue_069_griffin": "Half-eagle, half-lion beast",
+    "clue_070_halberd": "Pole weapon with an axe blade and a spike",
+    "clue_076_gargoyle": "Carved stone watcher that wakes after dark",
+    "clue_077_skeleton": "Walking remains with no flesh left",
+    "clue_078_werewolf": "Human who turns lupine under the moon",
+    "clue_080_grimoire": "Tome of spells in strange binding",
+    "clue_082_crossbow": "Bow with a trigger that shoots bolts",
+    "clue_085_stairway": "Steps down to the lower floor",
+    "clue_090_leviathan": "Legendary giant of the deep sea",
+    "clue_094_labyrinth": "Intruder-trapping maze",
+    "clue_096_graveyard": "Cemetery of headstones",
+    "clue_101_nightmare": "Sleep-time vision that ends in dread",
+    "clue_104_gravestone": "Headstone over a burial",
+    "clue_105_drawbridge": "Lifts to block the keep's entrance"
+  },
+  "antonym_pairs": [
+    [
+      "clue_015_hero",
+      "clue_003_foe"
+    ],
+    [
+      "clue_010_ice",
+      "clue_026_fire"
+    ],
+    [
+      "clue_040_frost",
+      "clue_041_flame"
+    ],
+    [
+      "clue_011_joy",
+      "clue_060_sorrow"
+    ],
+    [
+      "clue_036_tower",
+      "clue_008_pit"
+    ],
+    [
+      "clue_028_hope",
+      "clue_027_fear"
+    ],
+    [
+      "clue_057_breeze",
+      "clue_071_tempest"
+    ]
+  ],
+  "archaic_spellings": [
+    {
+      "clue_id": "clue_045_goblin",
+      "archaic": "GOBELIN"
+    },
+    {
+      "clue_id": "clue_033_sword",
+      "archaic": "SWERD"
+    },
+    {
+      "clue_id": "clue_054_castle",
+      "archaic": "CASTEL"
+    },
+    {
+      "clue_id": "clue_047_spider",
+      "archaic": "SPYDER"
+    },
+    {
+      "clue_id": "clue_026_fire",
+      "archaic": "FYRE"
+    },
+    {
+      "clue_id": "clue_079_phantasm",
+      "archaic": "FANTASM"
+    },
+    {
+      "clue_id": "clue_052_helmet",
+      "archaic": "HELME"
+    },
+    {
+      "clue_id": "clue_061_sorcery",
+      "archaic": "SORCERIE"
+    }
+  ]
+}

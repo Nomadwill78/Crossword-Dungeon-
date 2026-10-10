@@ -47,6 +47,7 @@ static func default_profile() -> Dictionary:
 		"player_level": 1,
 		"total_letters_solved": 0,
 		"longest_chain": 0,
+		"deepest_depth": 0,
 		"current_streak_days": 0,
 		"longest_streak_days": 0,
 		"last_login_date": "",
@@ -92,6 +93,7 @@ static func default_statistics() -> Dictionary:
 		"total_chains": 0,
 		"chains_by_length": {},
 		"total_deaths": 0,
+		"total_floors_cleared": 0,
 		"longest_combo_streak": 0,
 		"total_playtime_seconds": 0.0,
 	}

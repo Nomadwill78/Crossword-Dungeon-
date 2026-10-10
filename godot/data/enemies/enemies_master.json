@@ -1,10 +1,12 @@
 {
-  "version": 2,
+  "version": 3,
   "_schema_notes": {
     "roster": "Enemy types and weaknesses follow Design Doc section 4.4. Schema follows Technical Design Doc section 2.3.",
     "scaling": "Design Doc 4.4: base HP = 20 + (depth * 5) + (grid_size * 2); base damage = 5 + (depth * 2). base_hp/base_damage below are the depth-0 baselines; GridGenerator/CombatEngine apply the per-depth and per-size terms.",
     "asset_keys": "visual/audio carry LOGICAL keys, not file paths, so lookups go through AssetRegistry (CLAUDE.md 2.3). No art or audio exists yet; missing keys degrade to placeholder + warning.",
-    "weakness_pending": "Three enemies have weakness: null because the Design Doc weakness they are supposed to have depends on a system that does not exist yet (see each weakness_pending field). A null weakness simply never triggers a bonus multiplier; it is not a silent no-op bug."
+    "weakness_types": "word_property (computed from the answer, see WordProperties), clue_tag / not_clue_tag (read from the clue's `tags` in clues_master.json), exact_match (the boss: an accepted alternate answer deals penalty_multiplier; see boss_rounds.json).",
+    "ability_modes": "special_ability.effect.mode picks the implementation in EnemyAbilities: swap_solved_letters, reverse_answer, scale_remaining, mishear, blend. Abilities only fire at dungeon_depth >= unlock_depth, and each carries cooldown_turns (counted in attempts against that enemy type across the run).",
+    "no_counter_on_hit": "A boss flag: a correct answer that does not finish the enemy does not draw a counter-attack (only wrong answers and timeouts do), so a long multi-round fight is survivable."
   },
   "enemies": [
     {
@@ -23,7 +25,7 @@
         "trigger_condition": "player_takes_damage",
         "cooldown_turns": 3,
         "unlock_depth": 3,
-        "effect": { "type": "grid_manipulation", "swap_count": 2, "target": "solved_letters" }
+        "effect": { "type": "grid_manipulation", "mode": "swap_solved_letters", "swap_count": 2, "target": "solved_letters" }
       },
       "weakness": {
         "type": "word_property",
@@ -58,7 +60,7 @@
         "trigger_condition": "on_attempt",
         "cooldown_turns": 4,
         "unlock_depth": 3,
-        "effect": { "type": "input_manipulation", "target": "player_answer" }
+        "effect": { "type": "input_manipulation", "mode": "reverse_answer", "target": "player_answer" }
       },
       "weakness": {
         "type": "word_property",
@@ -84,14 +86,19 @@
       "attack_pattern": "sound_alike",
       "special_ability": {
         "name": "Mishearing",
-        "description": "Presents a clue whose answer has a same-sounding alternative",
+        "description": "Mishears the clue, swapping words for sound-alikes",
         "trigger_condition": "on_clue_reveal",
         "cooldown_turns": 3,
         "unlock_depth": 6,
-        "effect": { "type": "clue_manipulation", "target": "clue_text" }
+        "effect": { "type": "clue_manipulation", "mode": "mishear", "target": "clue_text" }
       },
-      "weakness": null,
-      "weakness_pending": "Design Doc 4.4 gives this enemy the weakness 'context clues'. That is not a property of the answer word, so it cannot be computed from the answer alone - it needs homophone-tagged clue data (clues_master has no homophone field yet). Left null rather than substituting an invented word property.",
+      "weakness": {
+        "type": "clue_tag",
+        "tag": "homophone",
+        "description": "Answers with a same-sounding twin (RAIN / REIGN) deal +50% damage",
+        "bonus_multiplier": 1.5
+      },
+      "weakness_note": "Design Doc 4.4 words this weakness as 'context clues', which is not computable. Read as: the Homophone is undone by answers that have a sound-alike (clues tagged homophone in clues_master.json) - see docs/adr/004-enemy-abilities-and-the-thesaurus.md.",
       "resistance": null,
       "visual": { "portrait_key": "enemy_homophone", "color_theme": "#6B8E5A" },
       "audio": { "spawn_key": "sfx_homophone_spawn", "attack_key": "sfx_homophone_attack", "defeat_key": "sfx_homophone_defeat" },
@@ -114,10 +121,14 @@
         "trigger_condition": "on_attempt_failed",
         "cooldown_turns": 4,
         "unlock_depth": 6,
-        "effect": { "type": "timer_manipulation", "multiplier": 0.5 }
+        "effect": { "type": "timer_manipulation", "mode": "scale_remaining", "multiplier": 0.5 }
       },
-      "weakness": null,
-      "weakness_pending": "Design Doc 4.4 gives this enemy the weakness 'full-word answers'. Every answer in clues_master is currently a full word, so implementing this now would multiply damage by 1.5x on literally every hit - an always-on buff, not a weakness. Needs abbreviation-style answers to exist before it means anything.",
+      "weakness": {
+        "type": "not_clue_tag",
+        "tag": "abbreviation",
+        "description": "Full-word answers (anything that is not an abbreviation like NPC) deal +50% damage",
+        "bonus_multiplier": 1.5
+      },
       "resistance": null,
       "visual": { "portrait_key": "enemy_acronym", "color_theme": "#A5734A" },
       "audio": { "spawn_key": "sfx_acronym_spawn", "attack_key": "sfx_acronym_attack", "defeat_key": "sfx_acronym_defeat" },
@@ -140,10 +151,14 @@
         "trigger_condition": "on_clue_reveal",
         "cooldown_turns": 5,
         "unlock_depth": 10,
-        "effect": { "type": "clue_manipulation", "clue_count": 2 }
+        "effect": { "type": "clue_manipulation", "mode": "blend", "clue_count": 2 }
       },
-      "weakness": null,
-      "weakness_pending": "Design Doc 4.4 gives this enemy the weakness 'compound answers'. Detecting a compound word needs either a compound-word list or a morphology check; clues_master has no compound flag. Left null rather than guessing with a heuristic that would misfire.",
+      "weakness": {
+        "type": "clue_tag",
+        "tag": "compound",
+        "description": "Compound answers (WEREWOLF, DRAWBRIDGE) deal +50% damage",
+        "bonus_multiplier": 1.5
+      },
       "resistance": null,
       "visual": { "portrait_key": "enemy_portmanteau", "color_theme": "#7A5A8E" },
       "audio": { "spawn_key": "sfx_portmanteau_spawn", "attack_key": "sfx_portmanteau_attack", "defeat_key": "sfx_portmanteau_defeat" },
@@ -162,14 +177,18 @@
       "is_boss": true,
       "base_hp": 200,
       "base_damage": 20,
+      "no_counter_on_hit": true,
       "attack_pattern": "synonym_shift",
       "phases": [
         { "phase": 1, "hp_threshold": 1.0, "ability": "synonym_swap", "description": "Changes the clue to a synonym mid-fight" },
         { "phase": 2, "hp_threshold": 0.5, "ability": "antonym_inversion", "description": "Reverses the meaning of the clue" },
         { "phase": 3, "hp_threshold": 0.25, "ability": "obscure_variant", "description": "Demands archaic or rare spellings" }
       ],
-      "weakness": null,
-      "weakness_pending": "Design Doc 4.4 / TDD 2.3 give this boss 'only exact-match answers deal full damage; synonyms deal 50%'. The answer validator currently accepts exact matches ONLY, so the synonym half of that rule can never fire and the exact-match half would be an always-on 1.0x no-op. Becomes meaningful once ClueResolver accepts synonyms.",
+      "weakness": {
+        "type": "exact_match",
+        "description": "Only the exact answer deals full damage; an accepted alternate (e.g. the modern spelling in phase 3) deals half",
+        "penalty_multiplier": 0.5
+      },
       "resistance": null,
       "visual": { "portrait_key": "boss_thesaurus", "color_theme": "#B08D57" },
       "audio": { "spawn_key": "sfx_thesaurus_spawn", "attack_key": "sfx_thesaurus_attack", "defeat_key": "sfx_thesaurus_defeat" },

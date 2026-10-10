@@ -13,8 +13,14 @@
 #    presentation delay and calls begin() when it is done animating; headless
 #    callers just call begin() immediately.
 #
-# Dependencies: CombatEngine, ClueResolver, TimerSystem, ConfigLoader
-# Events: state_changed, attempt_resolved, combat_finished (+ EventBus)
+# Milestone 4 additions: the enemy's special ability (EnemyAbilities) is
+# applied at the moments its trigger names, the prompt shown to the player can
+# change (a mishearing, a blended clue, the boss rewording the clue), and
+# `round_mode` lets one clue be a single round of a longer fight (the boss).
+#
+# Dependencies: CombatEngine, ClueResolver, TimerSystem, EnemyAbilities, ConfigLoader
+# Events: state_changed, attempt_resolved, combat_finished, prompt_changed,
+#         ability_triggered (+ EventBus)
 #============================================================================
 
 class_name CombatStateMachine
@@ -26,6 +32,10 @@ extends RefCounted
 signal state_changed(old_state: int, new_state: int)
 signal attempt_resolved(result: Dictionary)
 signal combat_finished(result: Dictionary)
+## The text the player should be reading changed (an ability altered the clue).
+signal prompt_changed(text: String)
+## An enemy ability fired. { name, message, kind } - kind is the effect mode.
+signal ability_triggered(info: Dictionary)
 
 #----------------------------------------------------------------------------
 # ENUMS
@@ -50,6 +60,11 @@ var current_state: int = State.IDLE
 var attempt_number: int = 1
 var max_attempts: int = 3
 
+## When true this encounter is one round of a longer fight: a correct answer
+## ends the round (victory = round cleared) even though the enemy is still
+## standing. Set before setup().
+var round_mode: bool = false
+
 #----------------------------------------------------------------------------
 # PRIVATE VARIABLES
 #----------------------------------------------------------------------------
@@ -63,6 +78,15 @@ var _damage_dealt_total: int = 0
 var _damage_taken_total: int = 0
 var _last_result: Dictionary = {}
 var _finished: bool = false
+
+var _prompt_text: String = ""
+var _ability: Dictionary = {}
+var _mirror_armed: bool = false
+var _variant_swapped: bool = false
+var _next_timer_scale: float = 1.0
+var _grid_effects: Array = []
+var _abilities_triggered: Array = []
+var _attempt_events: Array = []
 
 #----------------------------------------------------------------------------
 # PUBLIC METHODS
@@ -92,6 +116,14 @@ func setup(
 	_damage_dealt_total = 0
 	_damage_taken_total = 0
 	_finished = false
+	_prompt_text = String(clue.get("clue_text", clue.get("clue", "")))
+	_ability = EnemyAbilities.active_ability(enemy)
+	_mirror_armed = false
+	_variant_swapped = false
+	_next_timer_scale = 1.0
+	_grid_effects = []
+	_abilities_triggered = []
+	_attempt_events = []
 	attempt_number = 1
 	max_attempts = int(_combat_config().get("max_attempts", 3))
 
@@ -124,6 +156,11 @@ func force_timeout() -> Dictionary:
 func is_finished() -> bool:
 	return _finished
 
+## The clue text the player should see right now: the clue's own text, or what
+## an ability turned it into.
+func get_prompt() -> String:
+	return _prompt_text
+
 func get_clue() -> Dictionary:
 	return _clue
 
@@ -149,9 +186,14 @@ func _enter_state(state: int) -> void:
 			EventBus.combat_started.emit(String(_enemy.get("id", "")), String(_clue.get("id", "")))
 			if bool(_enemy.get("is_boss", false)):
 				EventBus.boss_encountered.emit(String(_enemy.get("id", "")))
+			_apply_reveal_ability()
 		State.AWAIT_INPUT:
 			if _timer != null:
 				_timer.start(int(_clue.get("difficulty", 1)), _timer_modifiers())
+				if _next_timer_scale < 1.0:
+					_timer.scale_remaining(_next_timer_scale)
+					_next_timer_scale = 1.0
+			_apply_attempt_ability()
 		State.VICTORY:
 			_finish(true)
 		State.DEFEAT:
@@ -179,9 +221,19 @@ func _resolve(raw_answer: String, timed_out: bool) -> Dictionary:
 
 	_transition_to(State.VALIDATE_ANSWER)
 
+	# Mirror Input: an armed Palindrome reverses what the player typed.
+	var submitted := raw_answer
+	var mirrored := false
+	if _mirror_armed and not timed_out:
+		submitted = EnemyAbilities.reverse_answer(raw_answer)
+		mirrored = true
+	_mirror_armed = false
+
+	_attempt_events = []
 	var result := CombatEngine.resolve_attempt(
-		raw_answer, _clue, _enemy, _player_state, attempt_number, time_remaining, timed_out
+		submitted, _clue, _enemy, _player_state, attempt_number, time_remaining, timed_out
 	)
+	result["mirrored"] = mirrored
 	_last_result = result
 
 	EventBus.answer_submitted.emit(
@@ -195,6 +247,8 @@ func _resolve(raw_answer: String, timed_out: bool) -> Dictionary:
 		_transition_to(State.ENEMY_ATTACK)
 		_apply_damage_to_player(result)
 
+	_apply_after_attempt_abilities(result)
+	result["abilities_triggered"] = _attempt_events.duplicate()
 	attempt_resolved.emit(result)
 	_transition_to(State.CHECK_RESOLUTION)
 	_check_resolution(result)
@@ -232,6 +286,12 @@ func _check_resolution(result: Dictionary) -> void:
 		_transition_to(State.VICTORY)
 		return
 
+	# One round of a longer fight: a correct answer clears the round even
+	# though the enemy is still standing.
+	if round_mode and bool(result.is_correct):
+		_transition_to(State.VICTORY)
+		return
+
 	if not bool(result.is_correct):
 		attempt_number += 1
 		if attempt_number > max_attempts:
@@ -262,9 +322,13 @@ func _finish(victory: bool) -> void:
 		"damage_taken": _damage_taken_total,
 		"player_hp": int(_player_state.get("current_hp", 0)),
 		"player_defeated": int(_player_state.get("current_hp", 0)) <= 0,
+		"enemy_dead": int(_enemy.get("current_hp", 0)) <= 0,
+		"abilities_triggered": _abilities_triggered.duplicate(),
+		"grid_effects": _grid_effects.duplicate(true),
 	}
 
-	if victory:
+	# In round mode "victory" can mean a cleared round, not a dead enemy.
+	if victory and bool(summary.enemy_dead):
 		EventBus.enemy_defeated.emit(String(_enemy.get("id", "")), summary)
 		if bool(_enemy.get("is_boss", false)):
 			EventBus.boss_defeated.emit(String(_enemy.get("id", "")))
@@ -274,6 +338,87 @@ func _finish(victory: bool) -> void:
 	EventBus.combat_ended.emit(summary)
 	_transition_to(State.CLEANUP)
 	combat_finished.emit(summary)
+
+#----------------------------------------------------------------------------
+# PRIVATE METHODS - enemy abilities
+#----------------------------------------------------------------------------
+
+## on_clue_reveal abilities (Homophone, Portmanteau) alter the prompt.
+func _apply_reveal_ability() -> void:
+	if _ability.is_empty() or EnemyAbilities.trigger_of(_ability) != EnemyAbilities.TRIGGER_ON_CLUE_REVEAL:
+		return
+	if not EnemyAbilities.is_ready(_player_state, _enemy):
+		return
+
+	match EnemyAbilities.mode_of(_ability):
+		"mishear":
+			var garbled := EnemyAbilities.mishear(_prompt_text)
+			if garbled == _prompt_text:
+				return  # nothing to mishear: do not spend the cooldown on nothing
+			_set_prompt(garbled)
+			_fire_ability("mishear", "%s! The clue is garbled." % String(_ability.get("name", "")))
+		"blend":
+			var blended := EnemyAbilities.blend(_clue)
+			if blended.is_empty():
+				return
+			_set_prompt(String(blended.text))
+			_fire_ability("blend", String(blended.notice))
+
+## on_attempt abilities (Palindrome) arm before the player types.
+func _apply_attempt_ability() -> void:
+	if _ability.is_empty() or EnemyAbilities.trigger_of(_ability) != EnemyAbilities.TRIGGER_ON_ATTEMPT:
+		return
+	if not EnemyAbilities.is_ready(_player_state, _enemy):
+		return
+	if EnemyAbilities.mode_of(_ability) == "reverse_answer":
+		_mirror_armed = true
+		_fire_ability("reverse_answer", "%s! Your next answer will be read backwards." % String(_ability.get("name", "")))
+
+## Runs after an attempt is resolved: one turn passes, then the failure and
+## damage triggers (Acronym, Anagram) get their chance, and the boss's
+## reworded clue takes effect after a miss.
+func _apply_after_attempt_abilities(result: Dictionary) -> void:
+	EnemyAbilities.tick(_player_state, _enemy)
+	var continues := int(_player_state.get("current_hp", 0)) > 0 and int(_enemy.get("current_hp", 0)) > 0
+	var missed := not bool(result.is_correct)
+
+	if missed and continues and not _variant_swapped and _clue.has("variant_clue"):
+		_variant_swapped = true
+		_set_prompt(String(_clue.variant_clue))
+		_fire_ability("synonym_swap", "The Thesaurus rewords the clue!", false)
+
+	if _ability.is_empty() or not EnemyAbilities.is_ready(_player_state, _enemy):
+		return
+	match EnemyAbilities.trigger_of(_ability):
+		EnemyAbilities.TRIGGER_ON_ATTEMPT_FAILED:
+			# The clock only runs while input is open, so Abbreviate shortens
+			# the NEXT attempt's time. Untimed fights (tests, bots) skip it.
+			if missed and continues and _timer != null and EnemyAbilities.mode_of(_ability) == "scale_remaining":
+				_next_timer_scale = float(_ability.get("effect", {}).get("multiplier", 0.5))
+				_fire_ability("scale_remaining", "%s! Your next attempt has half the time." % String(_ability.get("name", "")))
+		EnemyAbilities.TRIGGER_PLAYER_TAKES_DAMAGE:
+			if int(result.get("damage_taken", 0)) > 0 and EnemyAbilities.mode_of(_ability) == "swap_solved_letters":
+				var count := int(_ability.get("effect", {}).get("swap_count", 2))
+				_grid_effects.append({"type": "swap_solved_letters", "count": count})
+				_fire_ability("swap_solved_letters", "%s! Letters on the map shuffle." % String(_ability.get("name", "")))
+
+func _set_prompt(text: String) -> void:
+	_prompt_text = text
+	prompt_changed.emit(text)
+
+## Records and announces an ability, and (unless [param uses_cooldown] is
+## false, as for the boss's one-off reword) puts it on cooldown.
+func _fire_ability(mode: String, message: String, uses_cooldown: bool = true) -> void:
+	if uses_cooldown:
+		EnemyAbilities.start_cooldown(_player_state, _enemy, _ability)
+	var info := {
+		"name": String(_ability.get("name", "")) if uses_cooldown else "Synonym Swap",
+		"message": message,
+		"kind": mode,
+	}
+	_abilities_triggered.append(info)
+	_attempt_events.append(info)
+	ability_triggered.emit(info)
 
 ## The player's timer modifiers plus any vocabulary-node bonus for this
 ## clue's category (player_state.category_timer_bonus, set by LexiconEffects).

@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "grid": {
     "supported_sizes": [5, 7, 9],
     "default_size": 5,
@@ -53,6 +53,17 @@
     "daily_login_ink": 25,
     "daily_streak_bonus_per_day": 5,
     "daily_streak_bonus_cap": 50
+  },
+  "floors": {
+    "_note": "Milestone 4 multi-floor runs. After clearing a floor the player descends (depth + 1, a new grid, HP carried over plus descent_heal_fraction of max HP) or cashes out and banks the run. Enemy stats scale with depth (difficulty_scaling) and special abilities unlock at each enemy's unlock_depth.",
+    "descent_heal_fraction": 0.3
+  },
+  "boss_encounter": {
+    "_note": "The Thesaurus guards the exit of every every_n_floors-th floor, but only for a player who has the require_unlock level unlock (Design Doc 5.2: Lv 30). Set require_unlock to \"\" to make the boss appear for everyone. A fight is a series of single-clue rounds against one shared HP pool; max_rounds is a backstop so a fight always ends.",
+    "every_n_floors": 5,
+    "require_unlock": "thesaurus_boss",
+    "reward_ink": 150,
+    "max_rounds": 60
   },
   "progression": {
     "_note": "Design Doc 5.2. Total Ink Drops ever collected (spending does not lower it) needed for level L is round(base_ink * (L-1)^exponent); level 1 needs 0. level_unlocks are checked by id via PlayerLevel.is_unlocked; only the grid_7x7 / grid_9x9 unlocks gate gameplay so far, the rest are listed in the Lexicon but not yet enforced anywhere (see README).",

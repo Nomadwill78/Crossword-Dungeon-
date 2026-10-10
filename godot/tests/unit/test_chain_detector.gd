@@ -37,14 +37,22 @@ func test_dictionary_loaded() -> void:
 	assert_false(ChainDetector.is_valid_word("ZZQX"), "ZZQX is not a word")
 
 ## The chain dictionary must be a superset of the clue answers, or the game
-## would refuse to recognise its own solved words as chains.
+## would refuse to recognise its own solved words as chains. Abbreviations
+## (NPC, RPG...) are the deliberate exception: they are not dictionary words,
+## and a chain is a run of letters spelling a real word.
 func test_dictionary_covers_every_clue_answer() -> void:
 	var missing: Array[String] = []
+	var exempt := 0
 	for clue in ClueDatabase.get_all_clues():
 		var answer := String(clue.answer)
+		if ClueResolver.has_tag(clue, "abbreviation"):
+			exempt += 1
+			assert_false(ChainDetector.is_valid_word(answer), "%s is an abbreviation, not a chain word" % answer)
+			continue
 		if not ChainDetector.is_valid_word(answer):
 			missing.append(answer)
-	assert_eq(missing.size(), 0, "Every clue answer is in the chain dictionary (missing: %s)" % str(missing))
+	assert_eq(missing.size(), 0, "Every non-abbreviation clue answer is in the chain dictionary (missing: %s)" % str(missing))
+	assert_gt(float(exempt), 0.0, "the abbreviation exemption is actually used")
 
 func test_detects_horizontal_chain() -> void:
 	var grid := _grid(5, [

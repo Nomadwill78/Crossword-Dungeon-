@@ -11,8 +11,10 @@
 #   tally                                  { words_solved, letters_solved,
 #                                            enemies_defeated, bosses_defeated,
 #                                            chains_activated, chains_by_length,
-#                                            longest_chain }
-#   final_score, duration_seconds          set when the grid was cleared
+#                                            longest_chain, floors_cleared,
+#                                            deepest_depth }
+#   final_score                            summed over every floor cleared
+#   duration_seconds                       the fastest floor (Speed Demon)
 # Dependencies: InkDropManager, PlayerLevel, AchievementTracker
 # Events: via InkDropManager / AchievementTracker
 #============================================================================
@@ -88,11 +90,13 @@ static func _record_counters(
 	profile["best_score"] = maxi(int(profile.get("best_score", 0)), score)
 	profile["total_letters_solved"] = int(profile.get("total_letters_solved", 0)) + int(tally.get("letters_solved", 0))
 	profile["longest_chain"] = maxi(int(profile.get("longest_chain", 0)), int(tally.get("longest_chain", 0)))
+	profile["deepest_depth"] = maxi(int(profile.get("deepest_depth", 0)), int(tally.get("deepest_depth", 0)))
 
 	statistics["total_words_solved"] = int(statistics.get("total_words_solved", 0)) + int(tally.get("words_solved", 0))
 	statistics["total_enemies_defeated"] = int(statistics.get("total_enemies_defeated", 0)) + int(tally.get("enemies_defeated", 0))
 	statistics["total_bosses_defeated"] = int(statistics.get("total_bosses_defeated", 0)) + int(tally.get("bosses_defeated", 0))
 	statistics["total_chains"] = int(statistics.get("total_chains", 0)) + int(tally.get("chains_activated", 0))
+	statistics["total_floors_cleared"] = int(statistics.get("total_floors_cleared", 0)) + int(tally.get("floors_cleared", 0))
 	if not completed:
 		statistics["total_deaths"] = int(statistics.get("total_deaths", 0)) + 1
 

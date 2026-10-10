@@ -182,6 +182,41 @@ func clear_unsolved_in_line(line_index: int, direction: String) -> int:
 		_check_completion()
 	return cleared
 
+## The Anagram's Letter Swap (Design Doc 4.4): swaps the displayed letters of
+## [param pairs] random pairs of already-solved cells, never swapping two
+## identical letters. Only what the map shows (and so what chains can spell)
+## changes - the underlying word slots and their answers are untouched, so
+## nothing unsolved becomes unsolvable. Returns the positions that changed.
+func swap_solved_letters(pairs: int) -> Array[Vector2i]:
+	var solved: Array[Vector2i] = []
+	for cell in _grid_state.cells:
+		if cell.type == "letter" and bool(cell.solved):
+			solved.append(Vector2i(int(cell.x), int(cell.y)))
+
+	var touched: Array[Vector2i] = []
+	if solved.size() < 2:
+		return touched
+
+	for i in range(pairs):
+		# A handful of random draws is plenty; a grid whose solved letters are
+		# all the same has nothing to swap and gives up quietly.
+		for attempt in range(24):
+			var a: Vector2i = solved[randi() % solved.size()]
+			var b: Vector2i = solved[randi() % solved.size()]
+			var cell_a := _cell_at(a)
+			var cell_b := _cell_at(b)
+			if a == b or String(cell_a.letter) == String(cell_b.letter):
+				continue
+			var held: String = cell_a.letter
+			cell_a.letter = cell_b.letter
+			cell_b.letter = held
+			if not touched.has(a):
+				touched.append(a)
+			if not touched.has(b):
+				touched.append(b)
+			break
+	return touched
+
 ## Number of letter cells still unsolved. Used to tell "grid finished" from
 ## "player walked to the exit early".
 func unsolved_letter_count() -> int:

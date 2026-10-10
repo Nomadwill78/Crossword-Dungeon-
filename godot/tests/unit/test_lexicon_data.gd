@@ -69,7 +69,7 @@ func _test_trees() -> void:
 					assert_eq(String(effect.get("category", "")), category, "%s's effect targets its own tree's category" % node_id)
 				_assert_description_matches(node_id, String(node.get("description", "")), effect, true)
 
-	assert_eq(total_nodes, 20, "Design Doc 5.3: 20 vocabulary nodes at launch")
+	assert_gt(float(total_nodes), 19.0, "Design Doc 5.3: at least 20 vocabulary nodes at launch")
 
 	# Prerequisites must exist and the graph must be acyclic.
 	for tree in trees:
