@@ -64,6 +64,23 @@ Then open `http://localhost:8080/`.
   with a frequency list (to skip obscure entries) and filtered against a
   profanity blocklist.
 
+## Mobile
+
+The page is responsive: the 16-column grid scales to the screen width (capped
+at the original 32px cells on desktop), the header and battle controls wrap,
+the clue list becomes part of the normal page scroll on narrow screens, and
+touch devices get 44px tap targets and 16px answer text (so iOS Safari does not
+zoom when you focus an answer box).
+
+`tools/mobile_layout_check.mjs` plays the game headlessly at phone, tablet and
+desktop sizes and fails on horizontal overflow, an unreachable grid, undersized
+touch targets, or a word overflowing the battle view:
+
+```
+npm i -D playwright            # once, plus a Chromium (npx playwright install chromium)
+node tools/mobile_layout_check.mjs [screenshot-dir]
+```
+
 ## Known scope / next steps
 
 This is a single-level prototype proving out the map-is-a-crossword and
