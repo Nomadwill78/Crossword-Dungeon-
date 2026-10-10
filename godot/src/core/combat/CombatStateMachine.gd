@@ -151,7 +151,7 @@ func _enter_state(state: int) -> void:
 				EventBus.boss_encountered.emit(String(_enemy.get("id", "")))
 		State.AWAIT_INPUT:
 			if _timer != null:
-				_timer.start(int(_clue.get("difficulty", 1)), _player_state.get("timer_modifiers", {}))
+				_timer.start(int(_clue.get("difficulty", 1)), _timer_modifiers())
 		State.VICTORY:
 			_finish(true)
 		State.DEFEAT:
@@ -274,6 +274,16 @@ func _finish(victory: bool) -> void:
 	EventBus.combat_ended.emit(summary)
 	_transition_to(State.CLEANUP)
 	combat_finished.emit(summary)
+
+## The player's timer modifiers plus any vocabulary-node bonus for this
+## clue's category (player_state.category_timer_bonus, set by LexiconEffects).
+func _timer_modifiers() -> Dictionary:
+	var modifiers: Dictionary = (_player_state.get("timer_modifiers", {}) as Dictionary).duplicate()
+	var by_category: Dictionary = _player_state.get("category_timer_bonus", {})
+	var category_bonus := float(by_category.get(String(_clue.get("category", "")), 0.0))
+	if category_bonus != 0.0:
+		modifiers["timer_bonus"] = float(modifiers.get("timer_bonus", 0.0)) + category_bonus
+	return modifiers
 
 func _on_timer_expired() -> void:
 	if current_state == State.AWAIT_INPUT:

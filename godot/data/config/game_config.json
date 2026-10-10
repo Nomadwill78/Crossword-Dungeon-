@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "grid": {
     "supported_sizes": [5, 7, 9],
     "default_size": 5,
@@ -46,7 +46,31 @@
     "ink_bonus_length_7_plus": 5,
     "ink_per_chain": 20,
     "dictionary_fragment_drop_chance": 0.1,
-    "dictionary_fragments_to_unlock_word": 5
+    "dictionary_fragments_to_unlock_word": 5,
+    "_note_run_end": "Milestone 3. At the end of a run: (letters + chains + category bonuses) + run_completion_bonus (completed runs only), times the equipped tomes' ink_multiplier, times defeat_retention if the run was lost. Design Doc 5.1 says 10 Ink Drops per letter; ink_per_letter stays at the Milestone 1 value of 2 until the economy is playtested - it is the one number to change.",
+    "run_completion_bonus": 30,
+    "defeat_retention": 0.5,
+    "daily_login_ink": 25,
+    "daily_streak_bonus_per_day": 5,
+    "daily_streak_bonus_cap": 50
+  },
+  "progression": {
+    "_note": "Design Doc 5.2. Total Ink Drops ever collected (spending does not lower it) needed for level L is round(base_ink * (L-1)^exponent); level 1 needs 0. level_unlocks are checked by id via PlayerLevel.is_unlocked; only the grid_7x7 / grid_9x9 unlocks gate gameplay so far, the rest are listed in the Lexicon but not yet enforced anywhere (see README).",
+    "max_level": 50,
+    "level_curve": { "base_ink": 40, "exponent": 1.6 },
+    "tome_slots": 3,
+    "max_damage_reduction": 0.75,
+    "level_unlocks": [
+      { "level": 5, "unlock_id": "grid_7x7", "name": "7x7 Grids", "description": "Delve into larger dungeons." },
+      { "level": 10, "unlock_id": "chain_stacking", "name": "Chain Stacking", "description": "Hold two active chains at once." },
+      { "level": 15, "unlock_id": "hardcore_mode", "name": "Hardcore Mode", "description": "One retry, a 15s clock, and permadeath." },
+      { "level": 20, "unlock_id": "grid_9x9", "name": "9x9 Grids", "description": "The deepest dungeons." },
+      { "level": 25, "unlock_id": "custom_grid_themes", "name": "Custom Grid Themes", "description": "Restyle the dungeon map." },
+      { "level": 30, "unlock_id": "thesaurus_boss", "name": "The Thesaurus", "description": "Face the final boss." },
+      { "level": 40, "unlock_id": "daily_challenge", "name": "Daily Challenge", "description": "Compete on the shared daily seed." },
+      { "level": 50, "unlock_id": "grandmaster_title", "name": "Grandmaster", "description": "The title and exclusive cosmetics." }
+    ],
+    "grid_size_unlocks": { "5": "", "7": "grid_7x7", "9": "grid_9x9" }
   },
   "difficulty_scaling": {
     "_note": "Design Doc 4.4: base HP = 20 + (depth * 5) + (grid_size * 2); base damage = 5 + (depth * 2). hp_per_grid_size covers the grid-size term the per-enemy scaling block does not.",

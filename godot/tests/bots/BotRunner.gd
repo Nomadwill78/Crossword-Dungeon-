@@ -10,7 +10,9 @@ func _ready() -> void:
 
 	# A soft-lock or a non-terminating encounter is a hard failure, not a
 	# statistic - fail the run so CI notices.
-	var exit_code := 1 if bot.soft_locks > 0 else 0
-	if exit_code != 0:
+	var exit_code := 1 if (bot.soft_locks > 0 or bot.economy_violations > 0) else 0
+	if bot.soft_locks > 0:
 		push_error("RandomBot: %d soft-lock(s) detected" % bot.soft_locks)
+	if bot.economy_violations > 0:
+		push_error("RandomBot: %d Ink economy invariant violation(s)" % bot.economy_violations)
 	get_tree().quit(exit_code)

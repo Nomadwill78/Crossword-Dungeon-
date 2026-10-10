@@ -54,7 +54,8 @@ static func apply(effect: Dictionary, player_state: Dictionary) -> Dictionary:
 			# Buffs stack additively and share one encounter counter; the
 			# longest remaining duration wins.
 			player_state["chain_damage_buff"] = float(player_state.get("chain_damage_buff", 0.0)) + magnitude
-			var duration := int(effect.get("duration_encounters", 3))
+			# Vocabulary nodes (e.g. Lingering Spell) can extend the buff.
+			var duration := int(effect.get("duration_encounters", 3)) + int(player_state.get("chain_duration_bonus", 0))
 			player_state["chain_damage_buff_encounters"] = maxi(
 				int(player_state.get("chain_damage_buff_encounters", 0)), duration
 			)
