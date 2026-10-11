@@ -40,6 +40,22 @@ Then open `http://localhost:8080/`.
 - Losing a battle sends you back to the map at half HP; the monster isn't
   cleared, so you can walk back in and try again once you've healed up.
 - Clearing every monster corridor wins the run.
+- The **?** next to the HP bar opens a how-to-play card (HP, Score, winning,
+  hints). It is generated from the game's real constants (`src/rules.js`), so
+  it cannot drift out of date, and pulses once for first-time visitors.
+- The hero portrait beside the HP bar reacts to health: confident, wary,
+  battered, then defeated at 0 HP (`src/avatar.js`). `HEROES` has a perk slot
+  ready for selectable classes later.
+- Stuck on a clue? Open **Stuck? Hints** on its card. Pay in Score or HP
+  (HP never drops below 1, Score never below 0). Levels unlock in order:
+  1. *Show vowels* (10 Score / 1 HP)
+  2. *Reveal a letter* (50 Score / 2 HP), repeatable, never gives away the last letter
+  3. *Lore hint* (25 Score / 2 HP), an extra, simpler clue
+
+  Costs live in `src/hints.js`. Hints never solve a word for you.
+- Tapping a clue card scrolls to and glows its word on the grid; tapping a
+  grid cell does the reverse (tap a crossing cell again to switch between
+  across and down).
 
 ## Architecture
 
@@ -80,6 +96,17 @@ touch targets, or a word overflowing the battle view:
 npm i -D playwright            # once, plus a Chromium (npx playwright install chromium)
 node tools/mobile_layout_check.mjs [screenshot-dir]
 ```
+
+## Tests
+
+```
+node --test "tests/web/*.test.mjs"      # hints, avatar, how-to-play rules (no dependencies)
+node tools/ui_feature_check.mjs [dir]   # Playwright: ? modal, portrait, hints, highlighting
+```
+
+`tools/ui_feature_check.mjs` plays the game at desktop, phone and small-phone
+sizes. Set `PLAYWRIGHT_MODULE` / `CHROMIUM_PATH` if Playwright or Chromium
+are not installed in the usual place.
 
 ## Known scope / next steps
 
