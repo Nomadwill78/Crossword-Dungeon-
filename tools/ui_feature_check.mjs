@@ -31,13 +31,23 @@ const profiles = [
   { name: 'small phone 320x568', width: 320, height: 568, touch: true },
 ];
 
-async function open(profile, { storage = true } = {}) {
+/** Open the game. `hero` is the saved hero to start as (a returning player);
+ * pass null for a first-time visitor. The default is the Duelist, whose perk
+ * touches neither max HP nor hint costs, so the older checks below keep their
+ * baseline numbers. */
+async function open(profile, { hero = 'duelist' } = {}) {
   const context = await browser.newContext({
     viewport: { width: profile.width, height: profile.height },
     hasTouch: profile.touch,
     isMobile: profile.touch,
     deviceScaleFactor: 2,
   });
+  if (hero) {
+    // Only if nothing is saved yet, so a reload keeps whatever the player chose.
+    await context.addInitScript((id) => {
+      if (!localStorage.getItem('wordsmith-hero')) localStorage.setItem('wordsmith-hero', id);
+    }, hero);
+  }
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -175,6 +185,8 @@ for (const profile of profiles) {
     await (await card.$('input')).fill('ab');
     await card.$eval('summary', (s) => s.click());
     check(await page.$eval(`${cardSel} details`, (d) => d.open), 'the Hints panel opens');
+    const solveBox = await page.$eval(`${cardSel} form button`, (b) => { const r = b.getBoundingClientRect(); return { w: r.width, h: r.height }; });
+    check(solveBox.h <= 56 && solveBox.w >= 44, `the Solve button keeps its shape (${Math.round(solveBox.w)}x${Math.round(solveBox.h)})`);
     const rows = await page.$$(`${cardSel} .hint-row`);
     check(rows.length === 3, 'it shows three hint levels');
 
@@ -217,6 +229,138 @@ for (const profile of profiles) {
     await page.$eval(`${cardSel} button[type="submit"]`, (b) => b.click());
     await page.waitForTimeout(60);
     check(await page.$(`${cardSel} form`) === null, 'the corridor can still be solved after buying hints');
+    check(errors.length === 0, `no script errors (${errors.join('; ')})`);
+    await context.close();
+  }
+
+
+  // ---- hero picker -------------------------------------------------------
+  {
+    const { context, page, errors } = await open(profile, { hero: null });
+    const modalVisible = (id) => page.$eval(id, (e) => !e.hidden);
+    const box = (sel) => page.$eval(sel, (e) => {
+      const r = e.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    });
+    const hpIs = async (text) => (await hpText(page)) === text;
+
+    check(await modalVisible('#hero-modal'), 'a first-time visitor is asked to choose a hero');
+    check(await page.$eval('#hero-close', (e) => e.hidden), 'and cannot skip it');
+    const names = await page.$$eval('.hero-name', (els) => els.map((e) => e.textContent));
+    check(names.join('|') === 'The Scribe|The Warden|The Duelist', `three heroes are offered (${names.join(', ')})`);
+    const perks = await page.$$eval('.hero-perk', (els) => els.map((e) => e.textContent));
+    check(/free on every clue/.test(perks[0]) && /\+10 max HP/.test(perks[1]) && /\+20% damage/.test(perks[2]), 'each card says what its perk does');
+    check((await page.$$eval('.hero-portrait svg', (s) => new Set(s.map((e) => e.innerHTML)).size)) === 3, 'each hero has their own portrait');
+    check(await page.$eval('input[value="scribe"]', (e) => e.checked), 'the Scribe is pre-selected');
+    check(await page.evaluate(() => document.activeElement?.value === 'scribe'), 'focus starts on the selected hero');
+
+    const card = await box('.hero-card-wrap');
+    check(card.top >= 0 && card.bottom <= profile.height + 1 && card.left >= 0 && card.right <= profile.width + 1, 'the picker fits on screen');
+    const cardsFlat = await page.$$eval('.hero-card', (cs) => cs.map((c) => c.getBoundingClientRect().height));
+    check(cardsFlat.every((h) => h >= 56), 'every card is a comfortable tap target');
+    if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_picker.png` });
+
+    await page.keyboard.press('Escape');
+    await page.mouse.click(2, 2);
+    check(await modalVisible('#hero-modal'), 'Escape and tapping outside do not dismiss it');
+
+    // The tap on the backdrop dropped focus on the page; Tab must bring it back inside, not out to the page.
+    await page.keyboard.press('Tab');
+    check(await page.evaluate(() => !!document.activeElement.closest('#hero-modal')), 'Tab after tapping outside returns to the dialog');
+    await page.focus('input[value="scribe"]');
+    await page.keyboard.press('ArrowRight');
+    check(await page.$eval('input[value="warden"]', (e) => e.checked), 'arrow keys move between heroes');
+    await page.keyboard.press('Tab');
+    check(await page.evaluate(() => document.activeElement.id === 'hero-start'), 'Tab goes on to Begin run');
+    await page.keyboard.press('Tab');
+    check(await page.evaluate(() => document.activeElement.value === 'warden'), 'and wraps instead of leaving the dialog');
+
+    await page.click('.hero-option:has(input[value="warden"])');
+    await page.$eval('#hero-start', (b) => b.scrollIntoView({ block: 'nearest' }));
+    await page.click('#hero-start');
+    check(!(await modalVisible('#hero-modal')), 'Begin run starts the game');
+    check(await hpIs('50/50'), 'the Warden starts with 50 HP');
+    check(await page.$eval('#avatar', (e) => e.dataset.hero === 'warden' && /^The Warden/.test(e.getAttribute('aria-label'))), 'the header portrait is the Warden');
+    check(await page.evaluate(() => localStorage.getItem('wordsmith-hero')) === 'warden', 'the choice is remembered');
+
+    await page.click('#help-btn');
+    const rules = await page.$eval('#help-body', (e) => e.innerText);
+    check(/You have 50 HP/.test(rules) && /return with 25 HP/.test(rules), 'the rules card uses the Warden\'s HP');
+    check(/The Warden: Thick Skin\. \+10 max HP/.test(rules), 'and names the hero and perk');
+    await page.keyboard.press('Escape');
+
+    await page.reload();
+    await page.waitForSelector('.cell');
+    check(!(await modalVisible('#hero-modal')), 'a returning player is not asked again');
+    check(await hpIs('50/50'), 'and is still the Warden after a reload');
+
+    // Opening the picker mid-run: dismissable, and it warns about progress only if there is some.
+    const startRevealed = await page.$$eval('.cell.revealed', (c) => c.length);
+    await page.click('#hero-btn');
+    check(await modalVisible('#hero-modal') && !(await page.$eval('#hero-close', (e) => e.hidden)), 'the portrait reopens the picker, this time with a close button');
+    check(await page.$eval('#hero-note', (e) => e.hidden), 'no warning on a fresh run');
+    check(await page.$eval('input[value="warden"]', (e) => e.checked), 'the current hero is selected');
+    await page.keyboard.press('Escape');
+    check(!(await modalVisible('#hero-modal')) && (await page.evaluate(() => document.activeElement.id)) === 'hero-btn', 'Escape closes it and focus returns to the portrait');
+
+    // Make some progress, leave an unsent answer in another card, then start over.
+    const cards = await openCards(page);
+    await (await cards[0].$('input')).fill(answers.get(await clueOf(cards[0])));
+    await (await cards[0].$('button[type="submit"]')).evaluate((b) => b.click());
+    await page.waitForTimeout(60);
+    if (await page.$('#battle-view:not([hidden])')) {
+      await page.evaluate(() => { for (let i = 0; i < 3; i += 1) { document.querySelector('.rack-tile')?.click(); document.getElementById('submit-word').click(); } });
+    }
+    const left = (await openCards(page))[0];
+    if (left) await (await left.$('input')).evaluate((i) => { i.value = 'xyz'; }); // the map may be hidden behind a battle
+    await page.evaluate(() => document.getElementById('hero-btn').click());
+    check(!(await page.$eval('#hero-note', (e) => e.hidden)), 'with progress made, the picker warns that a new run loses it');
+    check((await page.$eval('#hero-start', (e) => e.textContent)) === 'Start new run', 'and the button says so');
+
+    await page.click('.hero-option:has(input[value="scribe"])');
+    await page.click('#hero-start');
+    check(await hpIs('40/40'), 'a new run as the Scribe starts at 40 HP');
+    check((await page.$eval('#score-text', (e) => e.textContent)) === '0', 'with Score reset');
+    check((await page.$$eval('.cell.revealed', (c) => c.length)) === startRevealed, 'and only the entrance revealed');
+    check((await page.$$eval('.clue-item input', (inputs) => inputs.filter((i) => i.value).length)) === 0, 'and no old typed answers carried over');
+    check(await page.$eval('#avatar', (e) => e.dataset.hero === 'scribe' && e.dataset.state === 'confident'), 'with the Scribe in the header');
+    check(!(await page.$eval('#avatar', (e) => e.classList.contains('hit'))), 'and no damage flinch from the swap');
+
+    // The Scribe's perk, live: Show vowels is free, later levels are not.
+    const scribeCard = (await openCards(page))[0];
+    const scribeIndex = await scribeCard.getAttribute('data-index');
+    const sel = `.clue-item[data-index="${scribeIndex}"]`;
+    await scribeCard.$eval('summary', (s) => s.click());
+    const freeBtn = await page.$(`${sel} .hint-row[data-level="1"] .pay-btn.free`);
+    check(!!freeBtn && (await freeBtn.textContent()) === 'Free', 'the Scribe\'s Show vowels button says Free');
+    check(!(await page.$(`${sel} .hint-row[data-level="1"] .pay-btn.hp`)), 'with no HP or Score button beside it');
+    await freeBtn.evaluate((b) => b.click());
+    check((await hpText(page)) === '40/40' && (await page.$eval('#score-text', (e) => e.textContent)) === '0', 'buying it costs nothing');
+    check(await page.$eval('#toast', (t) => /free/.test(t.textContent)), 'and the toast says free');
+    check((await page.$eval(`${sel} .hint-row[data-level="2"] .pay-btn.hp`, (b) => b.textContent)) === '2 HP', 'Reveal a letter still costs 2 HP');
+    if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_scribe_hint.png` });
+
+    // Restarting while a battle is on screen, even within the 300ms before the result overlay appears.
+    if (await reachBattle(page)) {
+      await page.evaluate(() => {
+        for (let i = 0; i < 60; i += 1) {
+          document.querySelector('.rack-tile')?.click();
+          document.getElementById('submit-word').click();
+          if (document.getElementById('player-hp-text').textContent.startsWith('0/')) break;
+        }
+        // The killing blow just landed; its overlay is still 300ms away.
+        document.getElementById('hero-btn').click();
+        document.querySelector('#hero-list input[value="warden"]').click();
+        document.getElementById('hero-start').click();
+      });
+      await page.waitForTimeout(700);
+      check(await page.$eval('#overlay', (e) => e.hidden), 'a restart cancels the pending result overlay');
+      check(await page.$eval('#battle-view', (e) => e.hidden) && !(await page.$eval('#map-view', (e) => e.hidden)), 'and lands on the map, not a dead battle');
+      check(await hpIs('50/50'), 'as a fresh Warden');
+      check(await page.$$eval('.clue-item.active', (a) => a.length) === 0, 'with nothing highlighted from the old run');
+    } else {
+      check(false, 'could not reach a battle to test restarting in one');
+    }
     check(errors.length === 0, `no script errors (${errors.join('; ')})`);
     await context.close();
   }

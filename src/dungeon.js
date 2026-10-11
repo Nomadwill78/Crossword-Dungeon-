@@ -1,5 +1,6 @@
 import { generateCrossword } from './crossword.js';
 import { HINT_LEVELS, MIN_HP_AFTER_HINT, isVowel } from './hints.js';
+import { freeHintLevels, maxHpBonus } from './heroes.js';
 
 const PLAYER_MAX_HP = 40;
 
@@ -16,10 +17,15 @@ function cellKey(r, c) {
  * that must be "solved" (its clue answered) before it can be entered. Once
  * solved, a monster corridor drops the player into battle; a reward corridor
  * pays out immediately.
+ *
+ * `hero` is optional: with none, the run has no perks (the baseline the rules
+ * are written against). With one, its perk adjusts max HP and hint costs here
+ * and word damage in combat (see heroes.js).
  */
 export class DungeonRun {
-  constructor(levelData) {
+  constructor(levelData, hero = null) {
     this.level = levelData;
+    this.hero = hero;
     const { grid, placements, width, height } = generateCrossword(levelData.entries);
     this.grid = grid;
     this.placements = placements;
@@ -28,8 +34,8 @@ export class DungeonRun {
 
     this.solved = new Set();
     this.cleared = new Set();
-    this.playerHP = PLAYER_MAX_HP;
-    this.playerMaxHP = PLAYER_MAX_HP;
+    this.playerMaxHP = PLAYER_MAX_HP + maxHpBonus(hero);
+    this.playerHP = this.playerMaxHP;
     this.score = 0;
     this.bonusLetters = 0;
     this.hintsUsed = 0;
@@ -191,7 +197,10 @@ export class DungeonRun {
   hintOptions(index) {
     const state = this._hint(index);
     const p = this.placements[index];
-    return HINT_LEVELS.map((def) => {
+    return HINT_LEVELS.map((base) => {
+      // A hero perk can make a level free; everything below uses the real price.
+      const free = freeHintLevels(this.hero).includes(base.level);
+      const def = free ? { ...base, cost: { score: 0, hp: 0 } } : base;
       let status;
       if (def.level === 1) status = state.vowels ? 'done' : 'available';
       else if (def.level === 2) {
@@ -203,6 +212,7 @@ export class DungeonRun {
       }
       return {
         ...def,
+        free,
         status,
         canPayScore: this.score >= def.cost.score,
         canPayHP: this.playerHP - def.cost.hp >= MIN_HP_AFTER_HINT,

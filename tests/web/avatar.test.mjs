@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { avatarState, avatarSvg, describeAvatar, HeroAvatar, HEROES, DEFAULT_HERO } from '../../src/avatar.js';
+import { avatarState, avatarSvg, describeAvatar, HeroAvatar } from '../../src/avatar.js';
+import { HEROES, HERO_LIST, DEFAULT_HERO } from '../../src/heroes.js';
 
 test('the portrait follows health: confident, wary, battered, defeated', () => {
   assert.equal(avatarState(40, 40), 'confident');
@@ -32,9 +33,25 @@ test('the description says how the hero is doing, for screen readers', () => {
   assert.match(describeAvatar('defeated', 0, 40), /defeated/);
 });
 
-test('there is room for hero classes later', () => {
-  assert.equal(DEFAULT_HERO, HEROES.scribe);
-  assert.ok('perk' in DEFAULT_HERO, 'a hero has a perk slot');
+test('every hero has a portrait in every state, and they look different', () => {
+  const states = ['confident', 'wary', 'battered', 'defeated'];
+  const marks = { defeated: 'av-x', battered: 'av-bandage', wary: 'av-sweat', confident: 'av-glint' };
+  for (const hero of HERO_LIST) {
+    for (const state of states) {
+      const svg = avatarSvg(state, hero.id);
+      assert.ok(svg.startsWith('<svg'), `${hero.id} ${state} is an SVG`);
+      assert.ok(svg.includes(marks[state]), `${hero.id} ${state} draws ${marks[state]}`);
+    }
+  }
+  const drawings = new Set(HERO_LIST.map((h) => avatarSvg('confident', h.id)));
+  assert.equal(drawings.size, HERO_LIST.length, 'no two heroes share a drawing');
+  assert.equal(avatarSvg('confident'), avatarSvg('confident', DEFAULT_HERO.id), 'the default hero is the default drawing');
+  assert.equal(avatarSvg('confident', 'nobody'), avatarSvg('confident', DEFAULT_HERO.id), 'an unknown hero falls back');
+});
+
+test('the screen-reader text names the hero', () => {
+  assert.match(describeAvatar('wary', 20, 40, HEROES.warden), /^The Warden looks wary \(20 of 40 HP\)/);
+  assert.match(describeAvatar('wary', 20, 40), /^The Scribe looks/);
 });
 
 /** Just enough of an element for HeroAvatar. */
@@ -75,4 +92,27 @@ test('HeroAvatar redraws only when the expression changes and flinches on damage
   assert.equal(el.dataset.state, 'defeated');
   assert.match(el.attrs['aria-label'], /defeated/);
   assert.ok(drawn.includes('<svg'));
+});
+
+test('switching hero redraws in their gear and forgets the old HP (no flinch)', () => {
+  const el = fakeElement();
+  const avatar = new HeroAvatar(el, HEROES.scribe);
+  assert.equal(el.dataset.hero, 'scribe');
+  avatar.update(40, 40);
+  const scribe = el.innerHTML;
+
+  avatar.update(30, 40);
+  assert.ok(el.classList.has('hit'), 'the old run left a flinch behind');
+  avatar.setHero(HEROES.warden);
+  assert.ok(!el.classList.has('hit'), 'a swap clears it');
+  assert.equal(el.dataset.hero, 'warden');
+  avatar.update(10, 50); // far lower than the old run's HP: a new run, not damage
+  assert.ok(!el.classList.has('hit'), 'a new run is not a flinch');
+  assert.notEqual(el.innerHTML, scribe);
+  assert.match(el.attrs['aria-label'], /^The Warden looks battered/);
+
+  avatar.setHero(HEROES.duelist);
+  avatar.update(40, 40);
+  assert.match(el.attrs['aria-label'], /^The Duelist/);
+  assert.equal(el.dataset.state, 'confident', 'state is recomputed after a swap');
 });

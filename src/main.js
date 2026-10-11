@@ -2,7 +2,8 @@ import { DungeonRun, RETREAT_HP_FRACTION } from './dungeon.js';
 import { BattleSession, LETTER_VALUES } from './combat.js';
 import { LEVEL_ONE } from './wordlist.js';
 import { HINT_LEVELS } from './hints.js';
-import { HeroAvatar } from './avatar.js';
+import { HeroAvatar, avatarSvg } from './avatar.js';
+import { HEROES, HERO_LIST, damageBonus, describePerk, heroById } from './heroes.js';
 import { renderRulesHtml } from './rules.js';
 
 const els = {
@@ -33,16 +34,32 @@ const els = {
   helpBody: document.getElementById('help-body'),
   helpClose: document.getElementById('help-close'),
   helpDone: document.getElementById('help-done'),
+  heroBtn: document.getElementById('hero-btn'),
+  heroModal: document.getElementById('hero-modal'),
+  heroTitle: document.getElementById('hero-title'),
+  heroNote: document.getElementById('hero-note'),
+  heroList: document.getElementById('hero-list'),
+  heroClose: document.getElementById('hero-close'),
+  heroStart: document.getElementById('hero-start'),
   toast: document.getElementById('toast'),
 };
 
 let dictionary = new Set();
 let themeWords = new Set(LEVEL_ONE.entries.map((e) => e.word.toUpperCase()));
-let dungeon = new DungeonRun(LEVEL_ONE);
+
+const HERO_KEY = 'wordsmith-hero';
+
+function savedHeroId() {
+  try { return localStorage.getItem(HERO_KEY); } catch { return null; }
+}
+
+/** The hero for this run: the one chosen last time, or the default. */
+let hero = heroById(savedHeroId());
+let dungeon = new DungeonRun(LEVEL_ONE, hero);
 let battle = null;
 let activeBattlePlacementIndex = null;
 
-const avatar = new HeroAvatar(els.avatar);
+const avatar = new HeroAvatar(els.avatar, hero);
 /** The corridor whose clue is selected; its word glows on the grid. */
 let activeIndex = null;
 /** Corridors whose Hints panel is open (the panel is rebuilt on every render). */
@@ -66,6 +83,7 @@ function setHp(hp, maxHp) {
   els.playerHpFill.style.width = `${Math.round((hp / maxHp) * 100)}%`;
   els.playerHpText.textContent = `${hp}/${maxHp}`;
   avatar.update(hp, maxHp);
+  els.heroBtn.setAttribute('aria-label', `${els.avatar.getAttribute('aria-label')}. Change hero`);
 }
 
 function renderHud() {
@@ -340,6 +358,19 @@ function payButton(currency, option, index) {
   return btn;
 }
 
+/** One button for a level the hero's perk made free. */
+function freeButton(option, index) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pay-btn free';
+  btn.textContent = 'Free';
+  btn.disabled = option.status !== 'available';
+  btn.setAttribute('aria-label', `${option.name}: free (${hero.perk.name})`);
+  btn.title = hero.perk.name;
+  btn.addEventListener('click', () => handleHint(index, option.level, 'score'));
+  return btn;
+}
+
 function renderHintPanel(p) {
   const details = document.createElement('details');
   details.className = 'hints';
@@ -372,6 +403,8 @@ function renderHintPanel(p) {
       done.className = 'hint-state';
       done.textContent = 'Used';
       pay.appendChild(done);
+    } else if (option.free) {
+      pay.appendChild(freeButton(option, p.index));
     } else {
       pay.appendChild(payButton('score', option, p.index));
       pay.appendChild(payButton('hp', option, p.index));
@@ -406,7 +439,11 @@ function handleHint(index, level, currency) {
   renderMap();
 
   const name = dungeon.hintOptions(index).find((o) => o.level === level).name;
-  showToast(`${name}: -${result.paid.amount} ${result.paid.currency === 'score' ? 'Score' : 'HP'}`);
+  showToast(
+    result.paid.amount === 0
+      ? `${name}: free`
+      : `${name}: -${result.paid.amount} ${result.paid.currency === 'score' ? 'Score' : 'HP'}`
+  );
 
   // Rebuilding the card dropped keyboard focus; put it back where it was.
   const row = document.querySelector(`.clue-item[data-index="${index}"] .hint-row[data-level="${level}"]`);
@@ -441,7 +478,10 @@ function handleAttempt(index, guess, itemEl) {
 function startBattle(index) {
   const p = dungeon.placements[index];
   activeBattlePlacementIndex = index;
-  battle = new BattleSession(p.monster, dictionary, themeWords, dungeon.playerHP, dungeon.playerMaxHP);
+  battle = new BattleSession(
+    p.monster, dictionary, themeWords, dungeon.playerHP, dungeon.playerMaxHP, undefined,
+    { damageBonus: damageBonus(dungeon.hero) }
+  );
   els.mapView.hidden = true;
   els.battleView.hidden = false;
   window.scrollTo(0, 0);
@@ -516,12 +556,15 @@ els.submitWord.addEventListener('click', () => {
   battle.submit();
   if (battle.over) {
     renderBattle();
+    const finished = battle;
     setTimeout(() => {
+      // The player may have started a new run in the meantime.
+      if (battle !== finished) return;
       showOverlay(
-        battle.won ? 'Victory!' : 'Retreat!',
-        battle.won
-          ? `${battle.monster.name} is defeated. The corridor is clear.`
-          : `You barely escape ${battle.monster.name}. Patch up and try again.`,
+        finished.won ? 'Victory!' : 'Retreat!',
+        finished.won
+          ? `${finished.monster.name} is defeated. The corridor is clear.`
+          : `You barely escape ${finished.monster.name}. Patch up and try again.`,
         () => endBattle()
       );
     }, 300);
@@ -536,31 +579,103 @@ els.clearWord.addEventListener('click', () => {
   renderBattle();
 });
 
+let overlayHandler = null;
+
 function showOverlay(title, text, onClose) {
+  dismissOverlay();
   els.overlayTitle.textContent = title;
   els.overlayText.textContent = text;
   els.overlay.hidden = false;
-  const close = () => {
-    els.overlay.hidden = true;
-    els.overlay.removeEventListener('click', close);
+  overlayHandler = () => {
+    dismissOverlay();
     if (onClose) onClose();
   };
-  els.overlay.addEventListener('click', close, { once: true });
+  els.overlay.addEventListener('click', overlayHandler, { once: true });
+}
+
+/** Hide the overlay without running its onClose (a new run cancels it). */
+function dismissOverlay() {
+  if (overlayHandler) els.overlay.removeEventListener('click', overlayHandler);
+  overlayHandler = null;
+  els.overlay.hidden = true;
 }
 
 function checkVictory() {
   if (dungeon.isVictory()) {
     showOverlay(
       'The Lexicon Crypt is Cleared!',
-      `Final score: ${dungeon.score}. Every monster corridor has been silenced.`
+      `Final score: ${dungeon.score}. Every monster corridor has been silenced.`,
+      () => openHeroPicker({ dismissable: true, title: 'Play again?' })
     );
   }
+}
+
+// ---- modals ------------------------------------------------------------
+
+// One dialog is open at a time. Esc closes it if it can be dismissed, Tab stays
+// inside it, the page behind does not scroll, and focus returns when it closes.
+let openModalEl = null;
+let modalDismiss = null;
+let modalReturnFocus = null;
+
+function openModal(modal, { focus, dismiss = null }) {
+  modalReturnFocus = document.activeElement;
+  openModalEl = modal;
+  modalDismiss = dismiss;
+  modal.hidden = false;
+  document.body.classList.add('modal-open');
+  focus?.focus();
+}
+
+function closeModal() {
+  if (!openModalEl) return;
+  openModalEl.hidden = true;
+  openModalEl = null;
+  modalDismiss = null;
+  document.body.classList.remove('modal-open');
+  modalReturnFocus?.focus?.({ preventScroll: true });
+}
+
+/** What Tab can reach inside a dialog, in order (one stop per radio group). */
+function tabStops(modal) {
+  return [...modal.querySelectorAll('button, input')].filter((el) => {
+    if (el.disabled || el.closest('[hidden]')) return false;
+    if (el.type !== 'radio') return true;
+    const group = [...modal.querySelectorAll(`input[type="radio"][name="${el.name}"]`)];
+    return el === (group.find((r) => r.checked) ?? group[0]);
+  });
+}
+
+document.addEventListener('keydown', (event) => {
+  if (!openModalEl) return;
+  if (event.key === 'Escape') {
+    modalDismiss?.();
+  } else if (event.key === 'Tab') {
+    const stops = tabStops(openModalEl);
+    const [first, last] = [stops[0], stops[stops.length - 1]];
+    if (!openModalEl.contains(document.activeElement)) {
+      // Focus drifted out (e.g. a tap on the backdrop): bring it back in.
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+});
+
+for (const modal of [els.helpModal, els.heroModal]) {
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) modalDismiss?.();
+  });
 }
 
 // ---- how to play -------------------------------------------------------
 
 const HELP_SEEN_KEY = 'wordsmith-help-seen';
-let helpReturnFocus = null;
 
 function rewardAmount(type) {
   return dungeon.placements.find((p) => p.reward?.type === type)?.reward.amount ?? null;
@@ -574,53 +689,121 @@ function openHelp() {
     healAmount: rewardAmount('heal'),
     goldAmount: rewardAmount('score'),
     hintLevels: HINT_LEVELS,
+    hero: { name: hero.name, perkName: hero.perk.name, perkText: describePerk(hero) },
   });
-  helpReturnFocus = document.activeElement;
-  els.helpModal.hidden = false;
-  document.body.classList.add('modal-open');
   els.helpBtn.classList.remove('attention');
   try { localStorage.setItem(HELP_SEEN_KEY, '1'); } catch { /* private mode: fine */ }
-  els.helpClose.focus();
-}
-
-function closeHelp() {
-  if (els.helpModal.hidden) return;
-  els.helpModal.hidden = true;
-  document.body.classList.remove('modal-open');
-  helpReturnFocus?.focus?.();
+  openModal(els.helpModal, { focus: els.helpClose, dismiss: closeModal });
 }
 
 els.helpBtn.addEventListener('click', openHelp);
-els.helpClose.addEventListener('click', closeHelp);
-els.helpDone.addEventListener('click', closeHelp);
-els.helpModal.addEventListener('click', (event) => {
-  if (event.target === els.helpModal) closeHelp();
-});
-document.addEventListener('keydown', (event) => {
-  if (els.helpModal.hidden) return;
-  if (event.key === 'Escape') {
-    closeHelp();
-  } else if (event.key === 'Tab') {
-    // Two focusable controls: keep Tab inside the dialog.
-    const [first, last] = [els.helpClose, els.helpDone];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-});
+els.helpClose.addEventListener('click', closeModal);
+els.helpDone.addEventListener('click', closeModal);
 
 // First visit: gently pulse the ? so new players notice it.
 try {
   if (!localStorage.getItem(HELP_SEEN_KEY)) els.helpBtn.classList.add('attention');
 } catch { /* no storage: skip the nudge */ }
 
+// ---- heroes and new runs -----------------------------------------------
+
+function renderHeroList(selectedId) {
+  els.heroList.innerHTML = '';
+  for (const h of HERO_LIST) {
+    const label = document.createElement('label');
+    label.className = 'hero-option';
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'hero';
+    radio.value = h.id;
+    radio.checked = h.id === selectedId;
+    label.appendChild(radio);
+
+    const card = document.createElement('div');
+    card.className = 'hero-card';
+
+    const portrait = document.createElement('div');
+    portrait.className = 'avatar hero-portrait';
+    portrait.dataset.hero = h.id;
+    portrait.dataset.state = 'confident';
+    portrait.setAttribute('aria-hidden', 'true');
+    portrait.innerHTML = avatarSvg('confident', h.id);
+    card.appendChild(portrait);
+
+    for (const [cls, text] of [
+      ['hero-name', h.name],
+      ['hero-tagline', h.tagline],
+      ['hero-perk-name', h.perk.name],
+      ['hero-perk', describePerk(h)],
+    ]) {
+      const line = document.createElement('span');
+      line.className = cls;
+      line.textContent = text;
+      card.appendChild(line);
+    }
+    label.appendChild(card);
+    els.heroList.appendChild(label);
+  }
+}
+
+/** True if starting over would throw something away. */
+function runHasProgress() {
+  if (dungeon.isVictory()) return false;
+  return battle !== null || dungeon.solved.size > 1 || dungeon.score !== 0 || dungeon.hintsUsed > 0;
+}
+
+function openHeroPicker({ dismissable, title = 'Choose your hero' }) {
+  const progress = runHasProgress();
+  els.heroTitle.textContent = title;
+  els.heroNote.hidden = !progress;
+  els.heroNote.textContent = 'Choosing a hero starts a new run. Your current progress will be lost.';
+  els.heroClose.hidden = !dismissable;
+  els.heroStart.textContent = progress ? 'Start new run' : 'Begin run';
+  renderHeroList(hero.id);
+  openModal(els.heroModal, {
+    focus: els.heroList.querySelector('input:checked'),
+    dismiss: dismissable ? closeModal : null,
+  });
+}
+
+/** Throw the current run away and begin a fresh one as [chosen]. */
+function startRun(chosen) {
+  dismissOverlay();
+  hero = chosen;
+  try { localStorage.setItem(HERO_KEY, hero.id); } catch { /* private mode: fine */ }
+
+  dungeon = new DungeonRun(LEVEL_ONE, hero);
+  battle = null;
+  activeBattlePlacementIndex = null;
+  activeIndex = null;
+  hintOpen.clear();
+  lastRevealedKey = null;
+
+  // renderClues keeps whatever is typed in the old cards; there are none now.
+  els.acrossList.innerHTML = '';
+  els.downList.innerHTML = '';
+  els.battleView.hidden = true;
+  els.mapView.hidden = false;
+  avatar.setHero(hero);
+  window.scrollTo(0, 0);
+  renderMap();
+}
+
+els.heroBtn.addEventListener('click', () => openHeroPicker({ dismissable: true }));
+els.heroClose.addEventListener('click', closeModal);
+els.heroStart.addEventListener('click', () => {
+  const chosen = heroById(els.heroList.querySelector('input:checked')?.value);
+  closeModal();
+  startRun(chosen);
+});
+
 async function init() {
   await loadDictionary();
   renderMap();
+  // A returning player goes straight in as their last hero; a new one chooses.
+  const saved = savedHeroId();
+  if (!saved || !Object.hasOwn(HEROES, saved)) openHeroPicker({ dismissable: false });
 }
 
 init();

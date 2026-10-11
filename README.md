@@ -43,9 +43,19 @@ Then open `http://localhost:8080/`.
 - The **?** next to the HP bar opens a how-to-play card (HP, Score, winning,
   hints). It is generated from the game's real constants (`src/rules.js`), so
   it cannot drift out of date, and pulses once for first-time visitors.
+- Pick a hero before each run (the picker opens on your first visit; tap the
+  portrait beside the HP bar to start a new run as someone else). Each has one
+  passive perk, defined as plain numbers in `src/heroes.js` so the game, the
+  picker and the How-to-play card always agree:
+  - **The Scribe**: Show vowels hints are free on every clue.
+  - **The Warden**: +10 max HP.
+  - **The Duelist**: +20% damage on every word.
+
+  Your last hero is remembered. To add one: give it an entry in `HEROES` and
+  `HERO_LIST`, a palette in `main.css` (`[data-hero="..."]`) and its gear in
+  `GEAR` in `src/avatar.js`.
 - The hero portrait beside the HP bar reacts to health: confident, wary,
-  battered, then defeated at 0 HP (`src/avatar.js`). `HEROES` has a perk slot
-  ready for selectable classes later.
+  battered, then defeated at 0 HP (`src/avatar.js`).
 - Stuck on a clue? Open **Stuck? Hints** on its card. Pay in Score or HP
   (HP never drops below 1, Score never below 0). Levels unlock in order:
   1. *Show vowels* (10 Score / 1 HP)
@@ -100,8 +110,8 @@ node tools/mobile_layout_check.mjs [screenshot-dir]
 ## Tests
 
 ```
-node --test "tests/web/*.test.mjs"      # hints, avatar, how-to-play rules (no dependencies)
-node tools/ui_feature_check.mjs [dir]   # Playwright: ? modal, portrait, hints, highlighting
+node --test "tests/web/*.test.mjs"      # hints, heroes, avatar, how-to-play rules (no dependencies)
+node tools/ui_feature_check.mjs [dir]   # Playwright: ? modal, hero picker, portrait, hints, highlighting
 ```
 
 `tools/ui_feature_check.mjs` plays the game at desktop, phone and small-phone

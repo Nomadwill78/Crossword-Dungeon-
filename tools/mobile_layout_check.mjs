@@ -28,6 +28,8 @@ const report = (ok, msg) => { if (!ok) problems++; console.log(`${ok ? '  ok ' :
 for (const [w, h] of sizes) {
   const touch = w < 800;
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch, deviceScaleFactor: 2 });
+  // A returning player (no first-visit hero picker in the way). The Duelist has no HP or hint perks.
+  await ctx.addInitScript(() => { if (!localStorage.getItem('wordsmith-hero')) localStorage.setItem('wordsmith-hero', 'duelist'); });
   const page = await ctx.newPage();
   await page.goto(BASE);
   await page.waitForSelector('.cell');

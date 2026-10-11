@@ -7,20 +7,11 @@
 //   battered   1-39% HP    half-closed eyes, panting, sweat, a bandage
 //   defeated   0 HP        X eyes, greyed out
 //
-// Colours come from CSS (.av-* classes in main.css) so the drawing themes like
-// the rest of the page.
+// Each hero has their own gear (see GEAR). Colours come from CSS (.av-*
+// classes in main.css, keyed on data-hero) so the drawing themes like the rest
+// of the page.
 
-/**
- * Hero roster. Only one hero exists today; the shape is here so selectable
- * classes with small passive perks (extra starting HP, free hints, ...) can be
- * added later without reworking the portrait: give each hero a `perk` and its
- * own palette class, and read the selected hero where the run is created.
- */
-export const HEROES = {
-  scribe: { id: 'scribe', name: 'The Scribe', perk: null },
-};
-
-export const DEFAULT_HERO = HEROES.scribe;
+import { DEFAULT_HERO, heroById } from './heroes.js';
 
 /** Which expression to show for [hp] of [maxHp]. */
 export function avatarState(hp, maxHp) {
@@ -66,35 +57,71 @@ const FACES = {
     <circle class="av-star" cx="44" cy="12" r="1.6"/>`,
 };
 
-/** The portrait as an SVG string. */
-export function avatarSvg(state) {
+// What distinguishes each hero: gear drawn behind the face (`head`) and in
+// front of it (`extra`). Colours are CSS, keyed on the avatar's data-hero.
+const GEAR = {
+  scribe: {
+    head: `<path class="av-robe" d="M6 64 Q8 47 32 45 Q56 47 58 64Z"/>
+      <path class="av-hood" d="M11 36 Q9 8 32 7 Q55 8 53 36 Q52 48 32 50 Q12 48 11 36Z"/>`,
+    extra: `<path class="av-quill" d="M53 58 Q57 46 51 38 Q56 47 49 58Z"/>`,
+  },
+  warden: {
+    head: `<path class="av-robe" d="M6 64 Q8 47 32 45 Q56 47 58 64Z"/>
+      <path class="av-plate" d="M3 64 Q4 50 20 46 L24 60Z"/>
+      <path class="av-plate" d="M61 64 Q60 50 44 46 L40 60Z"/>
+      <path class="av-helm" d="M11 38 Q8 5 32 4 Q56 5 53 38 L53 44 Q32 52 11 44Z"/>
+      <path class="av-crest" d="M32 4 Q30 -1 36 -1 Q35 2 36 5Z"/>`,
+    extra: `<path class="av-guard" d="M32 14 L32 33"/>`,
+  },
+  duelist: {
+    head: `<path class="av-robe" d="M6 64 Q8 47 32 45 Q56 47 58 64Z"/>
+      <path class="av-sash" d="M8 64 L30 47 L37 48 L17 64Z"/>
+      <path class="av-hair" d="M12 40 Q8 12 32 10 Q56 12 52 40 Q50 27 32 25 Q14 27 12 40Z"/>`,
+    extra: `<path class="av-cap" d="M9 23 Q32 1 55 21 Q44 14 32 15 Q20 14 9 23Z"/>
+      <path class="av-feather" d="M49 16 Q60 11 61 3 Q56 9 47 14Z"/>`,
+  },
+};
+
+/** The portrait as an SVG string. [hero] is a hero id (default: the Scribe). */
+export function avatarSvg(state, hero = DEFAULT_HERO.id) {
+  const gear = GEAR[hero] ?? GEAR[DEFAULT_HERO.id];
   return `<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true" focusable="false">
-    <path class="av-robe" d="M6 64 Q8 47 32 45 Q56 47 58 64Z"/>
-    <path class="av-hood" d="M11 36 Q9 8 32 7 Q55 8 53 36 Q52 48 32 50 Q12 48 11 36Z"/>
+    ${gear.head}
     <ellipse class="av-skin" cx="32" cy="32" rx="14" ry="15.5"/>
     ${FACES[state] ?? FACES.confident}
-    <path class="av-quill" d="M53 58 Q57 46 51 38 Q56 47 49 58Z"/>
+    ${gear.extra}
   </svg>`;
 }
 
 /** Screen-reader text for the portrait. */
-export function describeAvatar(state, hp, maxHp) {
+export function describeAvatar(state, hp, maxHp, hero = DEFAULT_HERO) {
   const mood = {
     confident: 'confident',
     wary: 'wary',
     battered: 'battered and panting',
     defeated: 'defeated',
   }[state];
-  return `${DEFAULT_HERO.name} looks ${mood} (${hp} of ${maxHp} HP)`;
+  return `${hero.name} looks ${mood} (${hp} of ${maxHp} HP)`;
 }
 
 /** Owns one portrait element: call update(hp, maxHp) whenever HP changes. */
 export class HeroAvatar {
-  constructor(element) {
+  constructor(element, hero = DEFAULT_HERO) {
     this.el = element;
+    this.hero = heroById(hero.id);
     this.state = null;
     this.lastHp = null;
     this.el.setAttribute('role', 'img');
+    this.el.dataset.hero = this.hero.id;
+  }
+
+  /** Switch to another hero (a new run): redraw from scratch, no flinch. */
+  setHero(hero) {
+    this.hero = heroById(hero.id);
+    this.el.dataset.hero = this.hero.id;
+    this.state = null;
+    this.lastHp = null;
+    this.el.classList.remove('hit');
   }
 
   update(hp, maxHp) {
@@ -102,9 +129,9 @@ export class HeroAvatar {
     if (state !== this.state) {
       this.state = state;
       this.el.dataset.state = state;
-      this.el.innerHTML = avatarSvg(state);
+      this.el.innerHTML = avatarSvg(state, this.hero.id);
     }
-    this.el.setAttribute('aria-label', describeAvatar(state, hp, maxHp));
+    this.el.setAttribute('aria-label', describeAvatar(state, hp, maxHp, this.hero));
 
     // A short flinch whenever HP drops.
     if (this.lastHp !== null && hp < this.lastHp) {
