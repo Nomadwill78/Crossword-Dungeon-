@@ -12,7 +12,13 @@
     <header id="hud">
       <h1>Wordsmith's Gambit</h1>
       <div id="hud-stats">
-        <div class="stat"><span class="label">HP</span><div class="bar player-bar"><div id="player-hp-fill" class="fill"></div></div><span id="player-hp-text"></span></div>
+        <div class="stat hp-stat">
+          <div id="avatar" class="avatar"></div>
+          <span class="label">HP</span>
+          <div class="bar player-bar"><div id="player-hp-fill" class="fill"></div></div>
+          <span id="player-hp-text"></span>
+          <button id="help-btn" class="help-btn" type="button" aria-label="How to play" aria-haspopup="dialog" title="How to play">?</button>
+        </div>
         <div class="stat"><span class="label">Score</span><span id="score-text">0</span></div>
       </div>
     </header>
@@ -53,6 +59,15 @@
         <div id="battle-log"></div>
       </section>
 
+      <div id="help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <div class="modal-card">
+          <button id="help-close" class="modal-close" type="button" aria-label="Close">&times;</button>
+          <h2 id="help-title">How to play</h2>
+          <div id="help-body"></div>
+          <button id="help-done" class="modal-done" type="button">Got it</button>
+        </div>
+      </div>
+
       <div id="overlay" hidden>
         <div id="overlay-content">
           <h2 id="overlay-title"></h2>
@@ -61,6 +76,8 @@
       </div>
     </main>
   </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
 
   <script type="module" src="src/main.js"></script>
 </body>

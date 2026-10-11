@@ -6,26 +6,17 @@
 // Needs Playwright (npm i -D playwright, or set PLAYWRIGHT_MODULE to its path)
 // and a Chromium (set CHROMIUM_PATH, or let Playwright use its own). Starts its
 // own static server, so nothing else needs to be running. Exits 1 on any problem.
-import http from 'node:http';
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { LEVEL_ONE } from '../src/wordlist.js';
+import { startStaticServer } from './lib/static_server.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = process.argv[2];
 const TAG = 'layout';
 if (OUT) fs.mkdirSync(OUT, { recursive: true });
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
-const server = http.createServer((req, res) => {
-  const file = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/$/, '/index.html'));
-  if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404).end(); return; }
-  res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' }).end(fs.readFileSync(file));
-});
-await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-const BASE = `http://127.0.0.1:${server.address().port}/index.html`;
+const staticServer = await startStaticServer();
+const BASE = staticServer.url;
 
 const answers = new Map(LEVEL_ONE.entries.map((e) => [e.clue, e.word]));
 const sizes = [[320, 568], [375, 667], [390, 844], [768, 1024], [1280, 800]];
@@ -112,6 +103,6 @@ for (const [w, h] of sizes) {
   await ctx.close();
 }
 await browser.close();
-server.close();
+staticServer.close();
 console.log(`\n${problems} problem(s)`);
 process.exit(problems ? 1 : 0);
