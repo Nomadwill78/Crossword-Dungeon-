@@ -3,6 +3,8 @@
 // (place longest words first, cross new words through existing letters,
 // validate no illegal adjacencies, retry/fallback for anything that won't fit).
 
+import { mulberry32 } from './rng.js';
+
 const GRID = 31; // virtual working grid, trimmed to bounding box at the end
 const CENTER = Math.floor(GRID / 2);
 
@@ -23,9 +25,13 @@ function attemptGeneration(entries, rng) {
   const placements = [];
   let disconnectedCount = 0;
 
+  // Ties are broken by a random key drawn up front. (A comparator that calls
+  // rng() would make the result depend on the order a browser's sort happens
+  // to compare things in, and the Daily Challenge must build the same grid in
+  // every browser.)
   const order = entries
-    .map((e, i) => ({ e, i }))
-    .sort((a, b) => b.e.word.length - a.e.word.length || rng() - 0.5);
+    .map((e, i) => ({ e, i, tie: rng() }))
+    .sort((a, b) => b.e.word.length - a.e.word.length || a.tie - b.tie);
 
   function getCell(r, c) {
     return cells.get(key(r, c));
@@ -86,17 +92,17 @@ function attemptGeneration(entries, rng) {
           const row = cr;
           const col = cc - i;
           const score = canPlace(word, row, col, 'across');
-          if (score != null && score > 0) candidates.push({ row, col, dir: 'across', score });
+          if (score != null && score > 0) candidates.push({ row, col, dir: 'across', score, tie: rng() });
         }
         if (cell.down == null) {
           const row = cr - i;
           const col = cc;
           const score = canPlace(word, row, col, 'down');
-          if (score != null && score > 0) candidates.push({ row, col, dir: 'down', score });
+          if (score != null && score > 0) candidates.push({ row, col, dir: 'down', score, tie: rng() });
         }
       }
     }
-    candidates.sort((a, b) => b.score - a.score || rng() - 0.5);
+    candidates.sort((a, b) => b.score - a.score || a.tie - b.tie);
     return candidates;
   }
 
@@ -144,23 +150,13 @@ function attemptGeneration(entries, rng) {
   return { placements, disconnectedCount, cells };
 }
 
-function mulberry32(seed) {
-  let a = seed;
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /**
  * Generate an interlocking crossword grid from theme entries.
  * @param {Array<{word:string, clue:string}>} rawEntries
  * @param {object} [options]
  * @param {number} [options.attempts=8] how many randomized passes to try
- * @param {number} [options.seed] deterministic seed
+ * @param {number} [options.seed] deterministic seed: the same seed and entries
+ *   give the same grid in every browser
  * @returns {{width:number, height:number, grid: Array<Array<Cell|null>>, placements: Array<Placement>}}
  */
 export function generateCrossword(rawEntries, options = {}) {

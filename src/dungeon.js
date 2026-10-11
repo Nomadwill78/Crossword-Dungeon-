@@ -1,12 +1,44 @@
 import { generateCrossword } from './crossword.js';
 import { HINT_LEVELS, MIN_HP_AFTER_HINT, isVowel } from './hints.js';
 import { freeHintLevels, maxHpBonus } from './heroes.js';
+import { hashSeed, randomInt, seededRng } from './rng.js';
 
 const PLAYER_MAX_HP = 40;
 
 /** Losing a battle ends it as a retreat: you keep the corridor but your HP is
  * reset to this fraction of max. */
 export const RETREAT_HP_FRACTION = 0.5;
+
+/** How many candidate layouts to generate before keeping the best one. */
+const LAYOUT_TRIES = 8;
+
+/** Negative if [a] sorts before [b] (compared element by element), positive if after, 0 if equal. */
+function firstDifference(a, b) {
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return a[i] - b[i];
+  }
+  return 0;
+}
+
+/**
+ * Builds the dungeon grid: several candidate layouts, keeping the most
+ * compact (fewest cut-off "secret passage" corridors, then the smallest
+ * longest side, then the smallest area). Cells are fluid, so a 26-wide grid
+ * would mean tiny cells on a phone. With a seed the candidates, and so the
+ * winner, are the same for everyone.
+ */
+function buildGrid(entries, seed) {
+  let best = null;
+  for (let k = 0; k < LAYOUT_TRIES; k += 1) {
+    const gridSeed = seed === null ? Math.floor(Math.random() * 2 ** 32) : hashSeed(`${seed}:grid:${k}`);
+    const candidate = generateCrossword(entries, { seed: gridSeed });
+    const cutOff = candidate.placements.filter((p) => p.disconnected).length;
+    const rank = [cutOff, Math.max(candidate.width, candidate.height), candidate.width * candidate.height];
+    const better = !best || firstDifference(rank, best.rank) < 0;
+    if (better) best = { candidate, rank };
+  }
+  return best.candidate;
+}
 
 function cellKey(r, c) {
   return `${r},${c}`;
@@ -21,12 +53,20 @@ function cellKey(r, c) {
  * `hero` is optional: with none, the run has no perks (the baseline the rules
  * are written against). With one, its perk adjusts max HP and hint costs here
  * and word damage in combat (see heroes.js).
+ *
+ * `options.seed` (a string) makes the run repeatable: the same seed gives the
+ * same grid, the same starting letters in each battle, the same monster hits
+ * and the same hint letters. The Daily Challenge uses the date as the seed.
+ * Without one, everything is random.
  */
 export class DungeonRun {
-  constructor(levelData, hero = null) {
+  constructor(levelData, hero = null, options = {}) {
     this.level = levelData;
     this.hero = hero;
-    const { grid, placements, width, height } = generateCrossword(levelData.entries);
+    this.seed = options.seed ?? null;
+    this.rng = this.seed === null ? Math.random : seededRng(`${this.seed}:run`);
+    this.battleCounts = new Map(); // placement index -> battles started there
+    const { grid, placements, width, height } = buildGrid(levelData.entries, this.seed);
     this.grid = grid;
     this.placements = placements;
     this.width = width;
@@ -39,6 +79,7 @@ export class DungeonRun {
     this.score = 0;
     this.bonusLetters = 0;
     this.hintsUsed = 0;
+    this.retreats = 0;
     this.hintState = new Map(); // placement index -> { vowels, letters, lore }
 
     this._buildAdjacency();
@@ -147,6 +188,18 @@ export class DungeonRun {
     this.playerHP = Math.max(0, Math.min(this.playerMaxHP, remainingPlayerHP));
     this.score += scoreGained ?? 0;
     if (won) this.cleared.add(index);
+    else this.retreats += 1;
+  }
+
+  /**
+   * Randomness for the next battle at corridor [index]. Seeded runs get a
+   * generator of their own for each (corridor, attempt), so the same fight
+   * deals the same letters to everyone, however they got there.
+   */
+  battleRng(index) {
+    const attempt = (this.battleCounts.get(index) ?? 0) + 1;
+    this.battleCounts.set(index, attempt);
+    return this.seed === null ? Math.random : seededRng(`${this.seed}:battle:${index}:${attempt}`);
   }
 
   // ---- hints ---------------------------------------------------------
@@ -250,7 +303,7 @@ export class DungeonRun {
       state.vowels = true;
     } else if (level === 2) {
       const hidden = this._hiddenPositions(index);
-      const letterIndex = hidden[Math.floor(Math.random() * hidden.length)];
+      const letterIndex = hidden[randomInt(this.rng, hidden.length)];
       const [r, c] = this.placements[index].cells[letterIndex];
       this.grid[r][c].revealed = true;
       state.letters += 1;

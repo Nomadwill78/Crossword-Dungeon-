@@ -69,6 +69,13 @@ export function rulesSections(facts) {
       }]
       : []),
     {
+      title: 'Daily challenge',
+      paragraphs: [
+        'Once a day (the day changes at midnight UTC) there is a Daily Challenge: everyone plays the same dungeon, as the same hero, with the same starting letters in each battle. Open it from the Daily button.',
+        'Your first finished run of the day is recorded, with your Score, retreats and hints used, and it extends your streak. Replays are practice and do not count. You can copy your result to share it.',
+      ],
+    },
+    {
       title: 'Tips',
       items: [
         'Tap a clue to light up its word on the grid. Tap a letter on the grid to find its clue.',

@@ -22,27 +22,27 @@ const BAG = Object.entries(LETTER_BAG_COUNTS).flatMap(([letter, count]) =>
 
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 
-function randomLetter() {
-  return BAG[Math.floor(Math.random() * BAG.length)];
+function randomLetter(rng) {
+  return BAG[Math.floor(rng() * BAG.length)];
 }
 
-function randomVowel() {
-  return ['A', 'E', 'I', 'O', 'U'][Math.floor(Math.random() * 5)];
+function randomVowel(rng) {
+  return ['A', 'E', 'I', 'O', 'U'][Math.floor(rng() * 5)];
 }
 
 /** Draw `count` fresh letters, topping up with vowels if `existingVowels`
  * (vowels already elsewhere in the rack) plus these wouldn't reach 2 —
  * keeps every rack state playable, including after mid-battle refills. */
-function drawLetters(count, existingVowels = 0) {
+function drawLetters(count, existingVowels = 0, rng = Math.random) {
   const needed = Math.max(0, Math.min(count, 2 - existingVowels));
   const letters = [];
-  for (let i = 0; i < needed; i++) letters.push(randomVowel());
-  for (let i = needed; i < count; i++) letters.push(randomLetter());
+  for (let i = 0; i < needed; i++) letters.push(randomVowel(rng));
+  for (let i = needed; i < count; i++) letters.push(randomLetter(rng));
   return letters;
 }
 
-function drawRack(size) {
-  return drawLetters(size, 0);
+function drawRack(size, rng) {
+  return drawLetters(size, 0, rng);
 }
 
 let tileSeq = 0;
@@ -61,8 +61,10 @@ export class BattleSession {
    * @param {number} rackSize
    * @param {{damageBonus?: number}} perks hero perk: fraction added to every
    *   valid word's damage (0.2 = +20%)
+   * @param {() => number} rng source of randomness (racks, monster hits);
+   *   a seeded one makes the whole battle repeatable
    */
-  constructor(monster, dictionary, themeWords, playerHP, playerMaxHP, rackSize = 8, perks = {}) {
+  constructor(monster, dictionary, themeWords, playerHP, playerMaxHP, rackSize = 8, perks = {}, rng = Math.random) {
     this.monster = { ...monster, maxHp: monster.hp };
     this.dictionary = dictionary;
     this.themeWords = themeWords;
@@ -70,7 +72,8 @@ export class BattleSession {
     this.playerMaxHP = playerMaxHP;
     this.rackSize = rackSize;
     this.damageBonus = perks.damageBonus ?? 0;
-    this.rack = drawRack(rackSize).map(makeTile);
+    this.rng = rng;
+    this.rack = drawRack(rackSize, rng).map(makeTile);
     this.selected = []; // array of tile ids, in pick order
     this.comboStreak = 0;
     this.scoreGained = 0;
@@ -116,7 +119,7 @@ export class BattleSession {
 
     if (word.length < 3 || !this.dictionary.has(word)) {
       this.comboStreak = 0;
-      const playerDamage = Math.max(1, this.monster.attack + Math.floor(Math.random() * 3) - 1);
+      const playerDamage = Math.max(1, this.monster.attack + Math.floor(this.rng() * 3) - 1);
       this.playerHP = Math.max(0, this.playerHP - playerDamage);
       this.clearSelection();
       this.log.unshift(`"${word || '—'}" isn't a word the dungeon recognizes. ${this.monster.name} hits you for ${playerDamage}.`);
@@ -161,7 +164,7 @@ export class BattleSession {
     const usedIds = new Set(this.selected);
     const keptVowels = this.rack.filter((t) => !usedIds.has(t.id) && VOWELS.has(t.letter)).length;
     const usedCount = this.rack.filter((t) => usedIds.has(t.id)).length;
-    const replacements = drawLetters(usedCount, keptVowels);
+    const replacements = drawLetters(usedCount, keptVowels, this.rng);
     let i = 0;
     this.rack = this.rack.map((t) => (usedIds.has(t.id) ? makeTile(replacements[i++]) : t));
   }

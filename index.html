@@ -10,7 +10,10 @@
 <body>
   <div id="app">
     <header id="hud">
-      <h1>Wordsmith's Gambit</h1>
+      <div class="title-row">
+        <h1>Wordsmith's Gambit</h1>
+        <button id="daily-btn" class="daily-btn" type="button" aria-haspopup="dialog">Daily</button>
+      </div>
       <div id="hud-stats">
         <div class="stat hp-stat">
           <button id="hero-btn" class="hero-btn" type="button" aria-haspopup="dialog" title="Change hero"><div id="avatar" class="avatar"></div></button>
@@ -71,10 +74,32 @@
       <div id="hero-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="hero-title">
         <div class="modal-card hero-card-wrap">
           <button id="hero-close" class="modal-close" type="button" aria-label="Cancel" hidden>&times;</button>
-          <h2 id="hero-title">Choose your hero</h2>
+          <h2 id="hero-title">New run</h2>
+          <div class="mode-tabs" role="tablist" aria-label="Game mode">
+            <button id="tab-free" class="mode-tab" type="button" role="tab" aria-selected="true" aria-controls="panel-free">Free play</button>
+            <button id="tab-daily" class="mode-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-daily" tabindex="-1">Daily challenge</button>
+          </div>
           <p id="hero-note" class="hero-note" hidden></p>
-          <div id="hero-list" class="hero-list" role="radiogroup" aria-labelledby="hero-title"></div>
+          <div id="panel-free" role="tabpanel" aria-labelledby="tab-free">
+            <div id="hero-list" class="hero-list" role="radiogroup" aria-label="Choose your hero"></div>
+          </div>
+          <div id="panel-daily" role="tabpanel" aria-labelledby="tab-daily" hidden>
+            <div id="daily-body" class="daily-body"></div>
+          </div>
           <button id="hero-start" class="modal-done" type="button">Begin run</button>
+        </div>
+      </div>
+
+      <div id="result-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="result-title">
+        <div class="modal-card">
+          <button id="result-close" class="modal-close" type="button" aria-label="Close">&times;</button>
+          <h2 id="result-title">Daily challenge complete</h2>
+          <div id="result-body"></div>
+          <pre id="result-share" class="result-share"></pre>
+          <div class="result-actions">
+            <button id="result-copy" class="modal-done secondary" type="button">Copy result</button>
+            <button id="result-again" class="modal-done" type="button">New run</button>
+          </div>
         </div>
       </div>
 

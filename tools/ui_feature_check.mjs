@@ -7,6 +7,9 @@
 // locally) and a Chromium (CHROMIUM_PATH). Exits 1 on any failed check.
 import fs from 'node:fs';
 import { LEVEL_ONE } from '../src/wordlist.js';
+import { dailyHero } from '../src/daily.js';
+import { maxHpBonus } from '../src/heroes.js';
+import { playToVictory } from './lib/autoplay.mjs';
 import { startStaticServer } from './lib/static_server.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -25,7 +28,7 @@ const check = (ok, message) => {
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 
-const profiles = [
+const allProfiles = [
   { name: 'desktop 1280x800', width: 1280, height: 800, touch: false },
   { name: 'phone 390x844', width: 390, height: 844, touch: true },
   { name: 'small phone 320x568', width: 320, height: 568, touch: true },
@@ -35,19 +38,38 @@ const profiles = [
  * pass null for a first-time visitor. The default is the Duelist, whose perk
  * touches neither max HP nor hint costs, so the older checks below keep their
  * baseline numbers. */
-async function open(profile, { hero = 'duelist' } = {}) {
+// PROFILE=0,2 runs only those viewports (handy while iterating).
+const profiles = allProfiles.filter((_, i) => !process.env.PROFILE || process.env.PROFILE.split(',').includes(String(i)));
+
+async function open(profile, { hero = 'duelist', now = null, seed = {}, failDailySave = false } = {}) {
   const context = await browser.newContext({
     viewport: { width: profile.width, height: profile.height },
     hasTouch: profile.touch,
     isMobile: profile.touch,
     deviceScaleFactor: 2,
   });
+  // `now` pins the page's clock (the daily dungeon depends on the date).
+  if (now) await context.clock.setFixedTime(now);
   if (hero) {
     // Only if nothing is saved yet, so a reload keeps whatever the player chose.
     await context.addInitScript((id) => {
       if (!localStorage.getItem('wordsmith-hero')) localStorage.setItem('wordsmith-hero', id);
     }, hero);
   }
+  for (const [key, value] of Object.entries(seed)) {
+    await context.addInitScript(([k, v]) => { if (localStorage.getItem(k) === null) localStorage.setItem(k, v); }, [key, value]);
+  }
+  if (failDailySave) {
+    // A browser that refuses to save the daily result (private mode, full disk).
+    await context.addInitScript(() => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (key === 'wordsmith-daily') throw new DOMException('quota', 'QuotaExceededError');
+        return original.call(this, key, value);
+      };
+    });
+  }
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: staticServer.url.replace(/\/$/, '') }).catch(() => {});
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -72,6 +94,190 @@ async function reachBattle(page) {
     await page.waitForTimeout(60);
   }
   return page.$eval('#battle-view', (e) => !e.hidden);
+}
+
+
+// ---- daily challenge ---------------------------------------------------------
+
+const layoutSignature = (page) => page.$$eval('.cell.filled', (cells) => cells
+  .map((c) => `${c.dataset.r},${c.dataset.c}:${c.querySelector('.cell-number')?.textContent ?? ''}`).join('|'));
+const firstRack = async (page) => {
+  if (!(await reachBattle(page))) return null;
+  return (await page.$$eval('.rack-tile', (t) => t.map((e) => e.firstElementChild.textContent))).join('');
+};
+const dailyRecord = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('wordsmith-daily') ?? '{}'));
+
+async function dailyChecks(profile) {
+  const DAY = '2026-10-12';
+  const NEXT_DAY = '2026-10-13';
+  const NOW = new Date(`${DAY}T12:00:00Z`);
+  const hero = dailyHero(DAY);
+  const heroMax = 40 + maxHpBonus(hero);
+  const history = JSON.stringify({
+    '2026-10-10': { score: 300, retreats: 0, hintsUsed: 1, hero: 'scribe' },
+    '2026-10-11': { score: 280, retreats: 2, hintsUsed: 0, hero: 'warden' },
+  });
+  const box = (page, sel) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; });
+  const isHidden = (page, sel) => page.$eval(sel, (e) => e.hidden);
+
+  // ---------------- player A: a returning player with a two-day streak ----------------
+  const A = await open(profile, { hero: 'duelist', now: NOW, seed: { 'wordsmith-daily': history } });
+  const a = A.page;
+  check(await a.$eval('#daily-btn', (b) => b.classList.contains('todo') && /waiting/.test(b.getAttribute('aria-label'))), 'the Daily button signals that today\'s dungeon is waiting');
+  check((await box(a, '#daily-btn')).height >= (profile.touch ? 44 : 28), 'and is a usable size');
+  check((await box(a, '#daily-btn')).right <= profile.width, 'and fits in the header');
+
+  await a.click('#daily-btn');
+  check(!(await isHidden(a, '#hero-modal')) && (await a.$eval('#tab-daily', (t) => t.getAttribute('aria-selected'))) === 'true', 'it opens the picker on the Daily tab');
+  check(await isHidden(a, '#panel-free') && !(await isHidden(a, '#panel-daily')), 'showing only the daily panel');
+  const panel = await a.$eval('#daily-body', (e) => e.innerText);
+  check(panel.includes(DAY), `it names today's date (${DAY})`);
+  check(panel.includes(`Today's hero: ${hero.name}`), `and today's hero (${hero.name})`);
+  check(/Streak\s*2 days/.test(panel), 'and the two-day streak');
+  check(/Next dungeon in 12h 0m/.test(panel), 'and the time to the next one (12h 0m at noon UTC)');
+  check((await a.$eval('#hero-start', (b) => b.textContent)) === "Play today's challenge", 'the button says what it does');
+  const card = await box(a, '.hero-card-wrap');
+  check(card.top >= 0 && card.bottom <= profile.height + 1 && card.right <= profile.width + 1, 'the picker fits on screen');
+  if (OUT) await a.screenshot({ path: `${OUT}/ui_${profile.width}_daily_tab.png` });
+
+  await a.focus('#tab-daily');
+  await a.keyboard.press('ArrowLeft');
+  check((await a.$eval('#tab-free', (t) => t.getAttribute('aria-selected'))) === 'true' && (await a.evaluate(() => document.activeElement.id)) === 'tab-free', 'arrow keys switch tabs and move focus with them');
+  check((await a.$eval('#hero-start', (b) => b.textContent)) === 'Begin run', 'and the button follows the tab');
+  await a.keyboard.press('ArrowRight');
+  check((await a.$eval('#tab-daily', (t) => t.getAttribute('aria-selected'))) === 'true', 'both ways');
+
+  await a.click('#hero-start');
+  check(await isHidden(a, '#hero-modal'), 'starting the daily closes the picker');
+  check(await a.$eval('#daily-btn', (b) => b.classList.contains('active') && !b.classList.contains('todo')), 'the Daily button shows a daily run is on');
+  check(await a.$eval('#avatar', (e) => e.dataset.hero) === hero.id, 'the header portrait is today\'s hero');
+  check((await hpText(a)) === `${heroMax}/${heroMax}`, `at ${heroMax} HP (that hero\'s maximum)`);
+  check(await a.evaluate(() => localStorage.getItem('wordsmith-hero')) === 'duelist', 'the daily did not overwrite the saved free-play hero');
+  await a.click('#help-btn');
+  const rules = await a.$eval('#help-body', (e) => e.innerText);
+  check(/Daily challenge/.test(rules) && /midnight UTC/.test(rules), 'the rules card explains the Daily Challenge');
+  check(rules.includes(`${hero.name}: ${hero.perk.name}`), 'and names today\'s hero');
+  await a.keyboard.press('Escape');
+
+  const sigA = await layoutSignature(a);
+  const cluesA = await a.$$eval('.clue-item .clue-text', (c) => c.map((e) => e.textContent).join('|'));
+  const rackA = await firstRack(a);
+  check(!!rackA && rackA.length === 8, `the first battle deals a rack (${rackA})`);
+
+  // ---------------- player B: someone else, same day, a browser that cannot save ----------------
+  const B = await open(profile, { hero: 'warden', now: NOW, failDailySave: true });
+  const b = B.page;
+  await b.click('#daily-btn');
+  await b.click('#hero-start');
+  const sigB = await layoutSignature(b);
+  check(sigB === sigA, 'another player, another browser, a different saved hero: the same dungeon layout');
+  check((await b.$$eval('.clue-item .clue-text', (c) => c.map((e) => e.textContent).join('|'))) === cluesA, 'with the same clues in the same places');
+  const rackB = await firstRack(b);
+  check(rackB === rackA, `and the same letters in the first battle (${rackB})`);
+
+  // ---------------- player C: the next day, with midnight passing while the page is open ----------------
+  const C = await open(profile, { hero: 'duelist', now: new Date(`${DAY}T23:59:30Z`) });
+  const c = C.page;
+  await c.click('#daily-btn');
+  check((await c.$eval('#daily-body', (e) => e.innerText)).includes(DAY), 'just before midnight it is still today\'s dungeon');
+  await c.keyboard.press('Escape');
+  await C.context.clock.setFixedTime(new Date(`${NEXT_DAY}T00:00:30Z`));
+  await c.click('#daily-btn');
+  const nextPanel = await c.$eval('#daily-body', (e) => e.innerText);
+  check(nextPanel.includes(NEXT_DAY) && nextPanel.includes(`Today's hero: ${dailyHero(NEXT_DAY).name}`), 'after midnight the same open page offers the new day and its hero');
+  check(/Next dungeon in 23h 59m/.test(nextPanel), 'with a fresh countdown');
+  await c.click('#hero-start');
+  check((await layoutSignature(c)) !== sigA, 'and a different dungeon');
+  check(await c.$eval('#avatar', (e) => e.dataset.hero) === dailyHero(NEXT_DAY).id, 'run by the new hero');
+  check(C.errors.length === 0, `no script errors (${C.errors.join('; ')})`);
+  await C.context.close();
+
+  // ---------------- B plays it through: a failed save is reported, not hidden ----------------
+  await playToVictory(b);
+  check(await b.$eval('#toast', (t) => t.classList.contains('show') && /save your result/.test(t.textContent)), 'when the browser cannot save, the player is told');
+  await b.evaluate(() => document.getElementById('overlay').click());
+  check(!(await isHidden(b, '#result-modal')), 'the result card still opens');
+  check(/Recorded as your result for 2026-10-12/.test(await b.$eval('#result-body', (e) => e.innerText)), 'and counts the run for this session');
+  await b.keyboard.press('Escape');
+  await b.click('#daily-btn');
+  check(/Done today/.test(await b.$eval('#daily-body', (e) => e.innerText)), 'later in the session the daily shows as done');
+  check(B.errors.length === 0, `no script errors (${B.errors.join('; ')})`);
+  await B.context.close();
+
+  // ---------------- A plays it through: the official result ----------------
+  const casts = await playToVictory(a);
+  check(casts >= 10, `A cleared all ten monsters (${casts} casts)`);
+  const hudScore = await a.$eval('#score-text', (e) => e.textContent);
+  await a.evaluate(() => document.getElementById('overlay').click());
+  check(!(await isHidden(a, '#result-modal')), 'winning a daily opens the result card');
+  const body = await a.$eval('#result-body', (e) => e.innerText);
+  check(/Recorded as your result for 2026-10-12/.test(body), 'which says it is the recorded result');
+  check(/Streak: 3 days/.test(body), 'and shows the streak, now three days');
+  const share = await a.$eval('#result-share', (e) => e.textContent);
+  const shareLines = share.split('\n');
+  check(shareLines[0] === "Wordsmith's Gambit — Daily 2026-10-12", 'the share text starts with the game and the day');
+  check(shareLines[1] === `${hero.name}: ${hudScore} Score`, `then the hero and Score (${shareLines[1]})`);
+  check(/^\d+ retreats?( · | )?/.test(shareLines[2]) && /\d+ hints?/.test(shareLines[2]), 'then retreats and hints');
+  check(share.includes('3 days in a row'), 'then the streak');
+  const saved = await dailyRecord(a);
+  check(saved[DAY]?.score === Number(hudScore) && saved[DAY]?.hero === hero.id, 'the result is saved on this device');
+  check(Object.keys(saved).length === 3 && saved['2026-10-10']?.score === 300, 'next to the earlier days');
+  const resultCard = await box(a, '#result-modal .modal-card');
+  check(resultCard.top >= 0 && resultCard.bottom <= profile.height + 1 && resultCard.right <= profile.width + 1, 'the result card fits on screen');
+  if (OUT) await a.screenshot({ path: `${OUT}/ui_${profile.width}_result.png` });
+  await a.click('#result-copy');
+  check((await a.evaluate(() => navigator.clipboard.readText().catch(() => null))) === share, 'Copy result puts the share text on the clipboard');
+  check(await a.$eval('#toast', (t) => /copied/i.test(t.textContent)), 'and confirms it');
+  await a.keyboard.press('Escape');
+  check(await isHidden(a, '#result-modal'), 'Escape closes the card');
+
+  // ---------------- replaying is practice ----------------
+  await a.click('#daily-btn');
+  const doneText = await a.$eval('#daily-body', (e) => e.innerText);
+  check(new RegExp(`Done today: ${hudScore} Score`).test(doneText), 'afterwards the daily shows today\'s result');
+  check(/Streak\s*3 days/.test(doneText), 'and the streak');
+  check((await a.$eval('#hero-start', (x) => x.textContent)) === 'Practice (not recorded)', 'a replay is offered as practice');
+  check(await a.$eval('#hero-note', (n) => n.hidden), 'no "you will lose progress" warning after a finished run');
+  await a.click('#hero-start');
+  check(await a.$eval('#daily-btn', (x) => x.classList.contains('practice') && x.textContent === 'Practice'), 'the header marks a practice run');
+  check((await layoutSignature(a)) === sigA, 'it is the very same dungeon');
+  await playToVictory(a);
+  await a.evaluate(() => document.getElementById('overlay').click());
+  const practiceBody = await a.$eval('#result-body', (e) => e.innerText);
+  check(/Practice run: your recorded result for 2026-10-12 stands/.test(practiceBody), 'a practice win says it does not count');
+  check(new RegExp(`Recorded: ${hudScore} Score`).test(practiceBody), 'and shows the recorded result');
+  check(JSON.stringify((await dailyRecord(a))[DAY]) === JSON.stringify(saved[DAY]), 'the recorded result is unchanged');
+  check(/Streak: 3 days/.test(practiceBody), 'and so is the streak');
+
+  // ---------------- free play: winning offers a new run, once ----------------
+  await a.click('#result-again');
+  check(!(await isHidden(a, '#hero-modal')) && (await a.$eval('#tab-free', (t) => t.getAttribute('aria-selected'))) === 'true', 'New run opens the picker on Free play');
+  await a.click('.hero-option:has(input[value="duelist"])');
+  await a.click('#hero-start');
+  check(await a.$eval('#daily-btn', (x) => !x.classList.contains('active') && !x.classList.contains('practice') && !x.classList.contains('todo')), 'back in free play the Daily button is plain (today is done)');
+  await playToVictory(a);
+  await a.evaluate(() => document.getElementById('overlay').click());
+  check(!(await isHidden(a, '#hero-modal')) && (await a.$eval('#hero-title', (t) => t.textContent)) === 'Play again?', 'winning free play offers "Play again?"');
+  check(await isHidden(a, '#result-modal'), 'and no daily result card');
+  check(!(await a.$eval('#hero-close', (x) => x.hidden)), 'which can be dismissed');
+  await a.keyboard.press('Escape');
+  const leftover = await a.$('.clue-item.open');
+  if (leftover) {
+    const clue = await leftover.$eval('.clue-text', (e) => e.textContent);
+    await leftover.$eval('input', (i, word) => { i.value = word; }, answers.get(clue));
+    await leftover.$eval('form', (f) => f.requestSubmit());
+    await a.waitForTimeout(400);
+    check(await a.$eval('#overlay', (o) => o.hidden) && (await isHidden(a, '#hero-modal')), 'solving a leftover room after winning does not announce the win again');
+  }
+  check(A.errors.length === 0, `no script errors (${A.errors.join('; ')})`);
+  await A.context.close();
+
+  // ---------------- a damaged save is ignored ----------------
+  const D = await open(profile, { hero: 'duelist', now: NOW, seed: { 'wordsmith-daily': '{{{ not json' } });
+  await D.page.click('#daily-btn');
+  check(/Streak\s*0 days/.test(await D.page.$eval('#daily-body', (e) => e.innerText)), 'a corrupted save means a fresh start, not a crash');
+  check(D.errors.length === 0, `no script errors (${D.errors.join('; ')})`);
+  await D.context.close();
 }
 
 for (const profile of profiles) {
@@ -273,7 +479,7 @@ for (const profile of profiles) {
     await page.keyboard.press('Tab');
     check(await page.evaluate(() => document.activeElement.id === 'hero-start'), 'Tab goes on to Begin run');
     await page.keyboard.press('Tab');
-    check(await page.evaluate(() => document.activeElement.value === 'warden'), 'and wraps instead of leaving the dialog');
+    check(await page.evaluate(() => document.activeElement.id === 'tab-free'), 'and wraps to the first control instead of leaving the dialog');
 
     await page.click('.hero-option:has(input[value="warden"])');
     await page.$eval('#hero-start', (b) => b.scrollIntoView({ block: 'nearest' }));
@@ -450,6 +656,8 @@ for (const profile of profiles) {
     check(errors.length === 0, `no script errors (${errors.join('; ')})`);
     await context.close();
   }
+
+  await dailyChecks(profile);
 }
 
 await browser.close();
