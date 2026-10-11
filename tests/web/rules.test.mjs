@@ -51,3 +51,21 @@ test('text is escaped', () => {
   assert.ok(html.includes('&lt;b&gt;x&lt;/b&gt;'));
   assert.ok(html.includes('a &amp; b'));
 });
+
+test('the hero section describes the chosen hero, using the same text as the picker', async () => {
+  const { HEROES, describePerk } = await import('../../src/heroes.js');
+  const hero = HEROES.warden;
+  const body = text(renderRulesHtml(facts({
+    maxHp: 50, retreatHp: 25,
+    hero: { name: hero.name, perkName: hero.perk.name, perkText: describePerk(hero) },
+  })));
+  assert.match(body, /The Warden: Thick Skin\. \+10 max HP\./);
+  assert.match(body, /You have 50 HP/);
+  assert.match(body, /return with 25 HP/);
+  assert.ok(!/Your hero/.test(text(renderRulesHtml(facts()))), 'no hero, no hero section');
+});
+
+test('hero text is escaped like everything else', () => {
+  const html = renderRulesHtml(facts({ hero: { name: '<b>X</b>', perkName: '"q"', perkText: '<script>' } }));
+  assert.ok(!html.includes('<script>') && !html.includes('<b>X'));
+});

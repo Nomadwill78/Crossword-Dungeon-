@@ -10,11 +10,12 @@ function escapeHtml(text) {
 
 /**
  * @param {{maxHp:number, retreatHp:number, monsterCount:number,
- *   healAmount:number|null, goldAmount:number|null, hintLevels:Array}} facts
+ *   healAmount:number|null, goldAmount:number|null, hintLevels:Array,
+ *   hero?:{name:string, perkName:string, perkText:string}}} facts
  * @returns {Array<{title:string, paragraphs?:string[], items?:string[]}>}
  */
 export function rulesSections(facts) {
-  const { maxHp, retreatHp, monsterCount, healAmount, goldAmount, hintLevels } = facts;
+  const { maxHp, retreatHp, monsterCount, healAmount, goldAmount, hintLevels, hero } = facts;
   const treasure = [
     goldAmount ? `gold is worth +${goldAmount} Score` : null,
     healAmount ? `a potion heals ${healAmount} HP` : null,
@@ -61,6 +62,12 @@ export function rulesSections(facts) {
       paragraphs: ['Stuck? Open Hints on any clue you can answer. The levels unlock in order, and you pay with Score or HP, your choice (you can never spend your last HP):'],
       items: hintLevels.map((h) => `${h.name}: ${h.blurb} Costs ${h.cost.score} Score or ${h.cost.hp} HP.`),
     },
+    ...(hero
+      ? [{
+        title: 'Your hero',
+        paragraphs: [`${hero.name}: ${hero.perkName}. ${hero.perkText} Tap your portrait to start a new run with a different hero.`],
+      }]
+      : []),
     {
       title: 'Tips',
       items: [

@@ -174,6 +174,7 @@ main { position: relative; }
 .clue-item form { display: flex; gap: 0.4rem; }
 .clue-item input[type="text"] {
   flex: 1;
+  min-width: 0; /* let it shrink on narrow phones instead of crushing Solve */
   background: var(--stone-dark);
   border: 1px solid var(--stone);
   border-radius: 4px;
@@ -190,6 +191,7 @@ main { position: relative; }
   font-weight: bold;
   cursor: pointer;
 }
+.clue-item form button { flex: none; white-space: nowrap; }
 .clue-item button:hover { filter: brightness(1.08); }
 .clue-item button.danger { background: var(--danger); color: var(--text); }
 
@@ -336,6 +338,20 @@ main { position: relative; }
    --------------------------------------------------------------------- */
 .hp-stat { gap: 0.5rem; }
 
+/* The portrait doubles as the "change hero" button. */
+.hero-btn {
+  flex: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 0;
+}
+.hero-btn:hover .avatar { filter: brightness(1.15); }
+.hero-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 .avatar {
   width: 48px;
   height: 48px;
@@ -353,8 +369,22 @@ main { position: relative; }
 .avatar.hit { animation: avatar-hit 0.4s ease; }
 .avatar svg { display: block; }
 
-.av-robe { fill: #3f5f8f; }
-.av-hood { fill: #2c2150; }
+/* Per-hero palette. The drawing reads these, so the header portrait and the
+   picker cards (both carry data-hero) always match. */
+[data-hero="scribe"] { --av-robe: #3f5f8f; --av-hood: #2c2150; --av-accent: var(--gold); }
+[data-hero="warden"] { --av-robe: #8a3340; --av-hood: #8d97a8; --av-accent: #d9e0ec; --av-dark: #5d6677; }
+[data-hero="duelist"] { --av-robe: #2f6b57; --av-hood: #5a3a24; --av-accent: #e8d37a; --av-cap: #8a2f35; }
+
+.av-robe { fill: var(--av-robe, #3f5f8f); }
+.av-hood { fill: var(--av-hood, #2c2150); }
+.av-plate { fill: var(--av-accent); stroke: var(--av-dark); stroke-width: 0.8; }
+.av-helm { fill: var(--av-hood); stroke: var(--av-dark); stroke-width: 1; }
+.av-crest { fill: var(--av-robe); }
+.av-guard { fill: none; stroke: var(--av-dark); stroke-width: 2.2; stroke-linecap: round; }
+.av-sash { fill: var(--av-accent); }
+.av-hair { fill: var(--av-hood); }
+.av-cap { fill: var(--av-cap); }
+.av-feather { fill: var(--av-accent); }
 .av-skin { fill: #f0cba3; }
 .av-brow { fill: none; stroke: #3a2a1c; stroke-width: 1.8; stroke-linecap: round; }
 .av-eye { fill: #241a2e; }
@@ -367,7 +397,7 @@ main { position: relative; }
 .av-bandage rect { fill: #f2ead8; stroke: #c9bfa6; stroke-width: 0.6; }
 .av-bandage path { stroke: #d05a5a; stroke-width: 1.4; stroke-linecap: round; fill: none; }
 .av-star { fill: var(--gold); }
-.av-quill { fill: var(--gold); }
+.av-quill { fill: var(--av-accent, var(--gold)); }
 .avatar[data-state="battered"] .av-skin { fill: #e3b894; }
 
 @keyframes avatar-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
@@ -446,6 +476,60 @@ main { position: relative; }
 }
 
 /* ---------------------------------------------------------------------
+   Hero picker
+   --------------------------------------------------------------------- */
+.hero-card-wrap { width: min(44rem, 100%); }
+.hero-note {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--hp-bg);
+  border-left: 3px solid var(--danger);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.hero-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.hero-option { position: relative; display: block; cursor: pointer; }
+.hero-option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.hero-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  height: 100%;
+  padding: 0.9rem 0.7rem;
+  text-align: center;
+  background: var(--panel-light);
+  border: 2px solid var(--stone);
+  border-radius: 10px;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.hero-option:hover .hero-card { border-color: var(--text-dim); }
+.hero-option input:checked + .hero-card {
+  border-color: var(--gold);
+  background: var(--stone-dark);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 14px rgba(232, 196, 104, 0.25);
+}
+.hero-option input:focus-visible + .hero-card { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hero-portrait { width: 72px; height: 72px; }
+.hero-name { color: var(--gold); font-weight: bold; font-size: 1.05rem; }
+.hero-tagline { color: var(--text-dim); font-style: italic; font-size: 0.85rem; }
+.hero-perk-name { margin-top: 0.2rem; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.hero-perk { font-size: 0.9rem; line-height: 1.35; }
+
+/* ---------------------------------------------------------------------
    Grid highlight, hint panel, toast
    --------------------------------------------------------------------- */
 .cell.filled { cursor: pointer; }
@@ -520,7 +604,8 @@ main { position: relative; }
   padding: 0.25rem 0.55rem;
   white-space: nowrap;
 }
-.clue-item .pay-btn.hp { border-color: var(--danger); color: #ff9aa2; }
+.clue-item .pay-btn.free { color: var(--success); border-color: var(--success); }
+.pay-btn.hp { border-color: var(--danger); color: #ff9aa2; }
 .clue-item .pay-btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; }
 .hint-state { font-size: 0.8rem; color: var(--text-dim); }
 
@@ -549,9 +634,28 @@ main { position: relative; }
   .hp-stat { gap: 0.4rem; }
   .help-btn { width: 32px; height: 32px; }
   .modal-card { padding: 1rem 1.1rem 1.25rem; }
+  /* Heroes stack as rows: portrait on the left, words on the right. */
+  .hero-list { grid-template-columns: 1fr; gap: 0.5rem; }
+  .hero-card {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    grid-template-areas: "pic name" "pic tag" "pic perkname" "pic perk";
+    column-gap: 0.8rem;
+    row-gap: 0.1rem;
+    align-items: center;
+    justify-items: start;
+    text-align: left;
+    padding: 0.6rem 0.7rem;
+  }
+  .hero-portrait { grid-area: pic; width: 56px; height: 56px; }
+  .hero-name { grid-area: name; }
+  .hero-tagline { grid-area: tag; }
+  .hero-perk-name { grid-area: perkname; margin-top: 0.1rem; }
+  .hero-perk { grid-area: perk; }
 }
 @media (pointer: coarse) {
   .help-btn { width: 36px; height: 36px; }
+  .hero-btn { padding: 2px; } /* 40px portrait + 2px each side = a 44px tap target */
 }
 @media (prefers-reduced-motion: reduce) {
   .avatar, .avatar.hit, .help-btn.attention, .cell.just-revealed { animation: none; }

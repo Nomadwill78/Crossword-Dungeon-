@@ -58,14 +58,18 @@ export class BattleSession {
    * @param {Set<string>} themeWords uppercase dungeon theme words (combo bonus)
    * @param {number} playerHP
    * @param {number} playerMaxHP
+   * @param {number} rackSize
+   * @param {{damageBonus?: number}} perks hero perk: fraction added to every
+   *   valid word's damage (0.2 = +20%)
    */
-  constructor(monster, dictionary, themeWords, playerHP, playerMaxHP, rackSize = 8) {
+  constructor(monster, dictionary, themeWords, playerHP, playerMaxHP, rackSize = 8, perks = {}) {
     this.monster = { ...monster, maxHp: monster.hp };
     this.dictionary = dictionary;
     this.themeWords = themeWords;
     this.playerHP = playerHP;
     this.playerMaxHP = playerMaxHP;
     this.rackSize = rackSize;
+    this.damageBonus = perks.damageBonus ?? 0;
     this.rack = drawRack(rackSize).map(makeTile);
     this.selected = []; // array of tile ids, in pick order
     this.comboStreak = 0;
@@ -128,7 +132,9 @@ export class BattleSession {
     const lengthBonus = word.length >= 7 ? 2 : word.length >= 5 ? 1.5 : 1;
     const combo = this.themeWords.has(word);
     const comboMultiplier = Math.min(2, 1 + this.comboStreak * 0.15);
-    const damage = Math.round(base * lengthBonus * comboMultiplier * (combo ? 2 : 1));
+    const damage = Math.round(
+      base * lengthBonus * comboMultiplier * (combo ? 2 : 1) * (1 + this.damageBonus)
+    );
 
     this.comboStreak += 1;
     this.monster.hp = Math.max(0, this.monster.hp - damage);
