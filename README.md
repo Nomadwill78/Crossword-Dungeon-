@@ -54,6 +54,15 @@ Then open `http://localhost:8080/`.
   Your last hero is remembered. To add one: give it an entry in `HEROES` and
   `HERO_LIST`, a palette in `main.css` (`[data-hero="..."]`) and its gear in
   `GEAR` in `src/avatar.js`.
+- **Daily Challenge** (the Daily button in the header, or the Daily tab in the
+  new-run picker): one dungeon a day, the same for everyone. The day is the UTC
+  date and it fixes the grid layout, the hero, and every dice roll (battle
+  letters, monster hits, hint letters), all drawn from a seeded generator
+  (`src/rng.js`, `src/daily.js`). Your first finished run each day is recorded
+  on this device with its Score, retreats and hints used, and extends your
+  streak. Replays are practice and do not count. The result card has a
+  copy-to-clipboard share text. There is no server, so there is no global
+  leaderboard; results are compared by sharing them.
 - The hero portrait beside the HP bar reacts to health: confident, wary,
   battered, then defeated at 0 HP (`src/avatar.js`).
 - Stuck on a clue? Open **Stuck? Hints** on its card. Pay in Score or HP
@@ -110,12 +119,20 @@ node tools/mobile_layout_check.mjs [screenshot-dir]
 ## Tests
 
 ```
-node --test "tests/web/*.test.mjs"      # hints, heroes, avatar, how-to-play rules (no dependencies)
-node tools/ui_feature_check.mjs [dir]   # Playwright: ? modal, hero picker, portrait, hints, highlighting
+node --test "tests/web/*.test.mjs"      # hints, heroes, avatar, rules, seeding, daily (no dependencies)
+node tools/ui_feature_check.mjs [dir]   # Playwright: ? modal, hero picker, portrait, hints, highlighting,
+                                        # and full daily-challenge playthroughs (PROFILE=0 for one viewport)
 ```
 
 `tools/ui_feature_check.mjs` plays the game at desktop, phone and small-phone
-sizes. Set `PLAYWRIGHT_MODULE` / `CHROMIUM_PATH` if Playwright or Chromium
+sizes, including whole runs to victory (`tools/lib/autoplay.mjs` solves every
+clue and wins each battle with the best word on the rack).
+
+**Changing the daily:** the pinned values in `tests/web/rng.test.mjs` and
+`tests/web/seeded.test.mjs` (the hash, the generator, and one day's layout)
+exist so nobody changes everyone's puzzle by accident. Editing the word list,
+the generator or the seed derivation changes every day's dungeon; update those
+pins on purpose when you do. Set `PLAYWRIGHT_MODULE` / `CHROMIUM_PATH` if Playwright or Chromium
 are not installed in the usual place.
 
 ## Known scope / next steps

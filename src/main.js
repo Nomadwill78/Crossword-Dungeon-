@@ -5,6 +5,10 @@ import { HINT_LEVELS } from './hints.js';
 import { HeroAvatar, avatarSvg } from './avatar.js';
 import { HEROES, HERO_LIST, damageBonus, describePerk, heroById } from './heroes.js';
 import { renderRulesHtml } from './rules.js';
+import {
+  computeStreak, dailyHero, dailyKey, dailySeed, formatCountdown, loadResults, msUntilNextDaily,
+  recordResult, saveResults, shareText,
+} from './daily.js';
 
 const els = {
   grid: document.getElementById('grid'),
@@ -41,6 +45,18 @@ const els = {
   heroList: document.getElementById('hero-list'),
   heroClose: document.getElementById('hero-close'),
   heroStart: document.getElementById('hero-start'),
+  dailyBtn: document.getElementById('daily-btn'),
+  tabFree: document.getElementById('tab-free'),
+  tabDaily: document.getElementById('tab-daily'),
+  panelFree: document.getElementById('panel-free'),
+  panelDaily: document.getElementById('panel-daily'),
+  dailyBody: document.getElementById('daily-body'),
+  resultModal: document.getElementById('result-modal'),
+  resultBody: document.getElementById('result-body'),
+  resultShare: document.getElementById('result-share'),
+  resultCopy: document.getElementById('result-copy'),
+  resultAgain: document.getElementById('result-again'),
+  resultClose: document.getElementById('result-close'),
   toast: document.getElementById('toast'),
 };
 
@@ -53,8 +69,31 @@ function savedHeroId() {
   try { return localStorage.getItem(HERO_KEY); } catch { return null; }
 }
 
-/** The hero for this run: the one chosen last time, or the default. */
+// Saved daily results. Reading `localStorage` can throw (private browsing), so
+// it is only touched inside daily.js's try/catch; a mirror in memory keeps the
+// session consistent even when nothing can be saved.
+const storage = {
+  getItem: (key) => localStorage.getItem(key),
+  setItem: (key, value) => localStorage.setItem(key, value),
+};
+let dailyResults = loadResults(storage);
+
+/** Pick up anything saved by another tab, without losing what is only in memory. */
+function refreshDailyResults() {
+  dailyResults = { ...loadResults(storage), ...dailyResults };
+  return dailyResults;
+}
+
+/** The hero for this run. In free play, the one chosen last time (or the
+ * default); in the Daily Challenge, whoever the day assigns. */
 let hero = heroById(savedHeroId());
+/** The player's own pick, kept apart from the daily hero so a daily run never
+ * overwrites it. */
+let freeHero = hero;
+/** Set during a Daily Challenge run: { key, official }. null in free play. */
+let daily = null;
+/** True once this run's win has been announced (and, for a daily, recorded). */
+let victoryShown = false;
 let dungeon = new DungeonRun(LEVEL_ONE, hero);
 let battle = null;
 let activeBattlePlacementIndex = null;
@@ -480,7 +519,8 @@ function startBattle(index) {
   activeBattlePlacementIndex = index;
   battle = new BattleSession(
     p.monster, dictionary, themeWords, dungeon.playerHP, dungeon.playerMaxHP, undefined,
-    { damageBonus: damageBonus(dungeon.hero) }
+    { damageBonus: damageBonus(dungeon.hero) },
+    dungeon.battleRng(index)
   );
   els.mapView.hidden = true;
   els.battleView.hidden = false;
@@ -601,12 +641,16 @@ function dismissOverlay() {
 }
 
 function checkVictory() {
-  if (dungeon.isVictory()) {
-    showOverlay(
-      'The Lexicon Crypt is Cleared!',
-      `Final score: ${dungeon.score}. Every monster corridor has been silenced.`,
-      () => openHeroPicker({ dismissable: true, title: 'Play again?' })
-    );
+  if (!dungeon.isVictory() || victoryShown) return;
+  victoryShown = true;
+  const title = 'The Lexicon Crypt is Cleared!';
+  const text = `Final score: ${dungeon.score}. Every monster corridor has been silenced.`;
+  if (daily) {
+    // Recorded now, not when the overlay is dismissed, so closing the tab can't lose it.
+    const outcome = finishDaily();
+    showOverlay(title, text, () => openResult(outcome));
+  } else {
+    showOverlay(title, text, () => openHeroPicker({ dismissable: true, title: 'Play again?' }));
   }
 }
 
@@ -639,7 +683,7 @@ function closeModal() {
 /** What Tab can reach inside a dialog, in order (one stop per radio group). */
 function tabStops(modal) {
   return [...modal.querySelectorAll('button, input')].filter((el) => {
-    if (el.disabled || el.closest('[hidden]')) return false;
+    if (el.disabled || el.closest('[hidden]') || el.tabIndex < 0) return false;
     if (el.type !== 'radio') return true;
     const group = [...modal.querySelectorAll(`input[type="radio"][name="${el.name}"]`)];
     return el === (group.find((r) => r.checked) ?? group[0]);
@@ -667,7 +711,7 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-for (const modal of [els.helpModal, els.heroModal]) {
+for (const modal of [els.helpModal, els.heroModal, els.resultModal]) {
   modal.addEventListener('click', (event) => {
     if (event.target === modal) modalDismiss?.();
   });
@@ -753,27 +797,110 @@ function runHasProgress() {
   return battle !== null || dungeon.solved.size > 1 || dungeon.score !== 0 || dungeon.hintsUsed > 0;
 }
 
-function openHeroPicker({ dismissable, title = 'Choose your hero' }) {
+let activeTab = 'free';
+
+/** Show the Free play or Daily challenge half of the picker. */
+function selectTab(name) {
+  activeTab = name;
+  const isDaily = name === 'daily';
+  for (const [tab, panel, on] of [
+    [els.tabFree, els.panelFree, !isDaily],
+    [els.tabDaily, els.panelDaily, isDaily],
+  ]) {
+    tab.setAttribute('aria-selected', String(on));
+    tab.tabIndex = on ? 0 : -1;
+    panel.hidden = !on;
+  }
+  if (isDaily) renderDailyPanel();
+  updateStartButton();
+}
+
+function updateStartButton() {
+  const progress = runHasProgress();
+  if (activeTab === 'daily') {
+    const done = !!refreshDailyResults()[dailyKey(new Date())];
+    els.heroStart.textContent = done ? 'Practice (not recorded)' : "Play today's challenge";
+  } else {
+    els.heroStart.textContent = progress ? 'Start new run' : 'Begin run';
+  }
+}
+
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function describeResult(r) {
+  return `${r.score} Score \u00b7 ${r.retreats} ${r.retreats === 1 ? 'retreat' : 'retreats'} \u00b7 ${r.hintsUsed} ${r.hintsUsed === 1 ? 'hint' : 'hints'}`;
+}
+
+function renderDailyPanel() {
+  const now = new Date();
+  const key = dailyKey(now);
+  const todaysHero = dailyHero(key);
+  const results = refreshDailyResults();
+  const record = results[key];
+  const streak = computeStreak(results, key);
+
+  const date = element('p', 'daily-date');
+  date.append("Today's dungeon \u00b7 ", element('strong', '', key), ' (UTC)');
+
+  const card = element('div', 'daily-hero');
+  const portrait = element('div', 'avatar hero-portrait');
+  portrait.dataset.hero = todaysHero.id;
+  portrait.dataset.state = 'confident';
+  portrait.setAttribute('aria-hidden', 'true');
+  portrait.innerHTML = avatarSvg('confident', todaysHero.id);
+  card.append(
+    portrait,
+    element('span', 'hero-name', `Today's hero: ${todaysHero.name}`),
+    element('span', 'hero-perk-name', todaysHero.perk.name),
+    element('span', 'hero-perk', describePerk(todaysHero))
+  );
+
+  const status = element('p', `daily-status${record ? ' done' : ''}`);
+  status.textContent = record
+    ? `Done today: ${describeResult(record)}. Replays are practice and are not recorded.`
+    : 'Same dungeon, hero and starting letters for everyone. Your first finished run today counts.';
+
+  const meta = element('div', 'daily-meta');
+  const streakText = element('span');
+  streakText.append('Streak ', element('strong', '', `${streak} ${streak === 1 ? 'day' : 'days'}`));
+  meta.append(streakText, element('span', '', `Next dungeon in ${formatCountdown(msUntilNextDaily(now))}`));
+
+  els.dailyBody.replaceChildren(date, card, status, meta);
+}
+
+function openHeroPicker({ dismissable, title = 'New run', tab = 'free' }) {
   const progress = runHasProgress();
   els.heroTitle.textContent = title;
   els.heroNote.hidden = !progress;
-  els.heroNote.textContent = 'Choosing a hero starts a new run. Your current progress will be lost.';
+  els.heroNote.textContent = 'Starting a new run will end your current one. Your progress will be lost.';
   els.heroClose.hidden = !dismissable;
-  els.heroStart.textContent = progress ? 'Start new run' : 'Begin run';
-  renderHeroList(hero.id);
+  renderHeroList(freeHero.id);
+  selectTab(tab);
   openModal(els.heroModal, {
-    focus: els.heroList.querySelector('input:checked'),
+    focus: tab === 'daily' ? els.heroStart : els.heroList.querySelector('input:checked'),
     dismiss: dismissable ? closeModal : null,
   });
 }
 
-/** Throw the current run away and begin a fresh one as [chosen]. */
-function startRun(chosen) {
+/** Throw the current run away and begin a fresh one as [chosen]. A Daily
+ * Challenge run is `{ key, official }`: seeded by the date, and recorded if no
+ * run has been recorded for that day yet. */
+function startRun(chosen, dailyRun = null) {
   dismissOverlay();
   hero = chosen;
-  try { localStorage.setItem(HERO_KEY, hero.id); } catch { /* private mode: fine */ }
+  daily = dailyRun;
+  victoryShown = false;
+  if (!daily) {
+    freeHero = hero;
+    try { localStorage.setItem(HERO_KEY, hero.id); } catch { /* private mode: fine */ }
+  }
 
-  dungeon = new DungeonRun(LEVEL_ONE, hero);
+  dungeon = new DungeonRun(LEVEL_ONE, hero, daily ? { seed: dailySeed(daily.key) } : {});
   battle = null;
   activeBattlePlacementIndex = null;
   activeIndex = null;
@@ -788,19 +915,137 @@ function startRun(chosen) {
   avatar.setHero(hero);
   window.scrollTo(0, 0);
   renderMap();
+  updateDailyButton();
+}
+
+function startDaily() {
+  const key = dailyKey(new Date());
+  startRun(dailyHero(key), { key, official: !refreshDailyResults()[key] });
+}
+
+// ---- the daily result -----------------------------------------------------
+
+/** Record a finished daily run (first one of the day counts). */
+function finishDaily() {
+  const { key } = daily;
+  const result = {
+    score: dungeon.score, retreats: dungeon.retreats, hintsUsed: dungeon.hintsUsed, hero: hero.id,
+  };
+  const outcome = recordResult(refreshDailyResults(), key, result);
+  dailyResults = outcome.results;
+  if (outcome.official && !saveResults(storage, dailyResults)) {
+    showToast("Couldn't save your result on this device.");
+  }
+  updateDailyButton();
+  return { key, result, official: outcome.official };
+}
+
+function openResult({ key, result, official }) {
+  const record = dailyResults[key] ?? result;
+  const recordHero = heroById(record.hero);
+  const streak = computeStreak(dailyResults, dailyKey(new Date()));
+
+  els.resultBody.replaceChildren();
+  els.resultBody.append(
+    element('p', `daily-status${official ? ' done' : ''}`,
+      official
+        ? `Recorded as your result for ${key}.`
+        : `Practice run: your recorded result for ${key} stands.`)
+  );
+  const meta = element('div', 'daily-meta');
+  meta.append(element('span', '', `This run: ${describeResult(result)}`));
+  els.resultBody.append(meta);
+  if (!official) {
+    const recorded = element('div', 'daily-meta');
+    recorded.append(element('span', '', `Recorded: ${describeResult(record)}`));
+    els.resultBody.append(recorded);
+  }
+  const streakLine = element('div', 'daily-meta');
+  streakLine.append(
+    element('span', '', `Streak: ${streak} ${streak === 1 ? 'day' : 'days'}`),
+    element('span', '', `Next dungeon in ${formatCountdown(msUntilNextDaily(new Date()))}`)
+  );
+  els.resultBody.append(streakLine);
+
+  els.resultShare.textContent = shareText({
+    key,
+    hero: recordHero,
+    result: record,
+    streak,
+    url: `${location.origin}${location.pathname}`,
+  });
+  openModal(els.resultModal, { focus: els.resultCopy, dismiss: closeModal });
+}
+
+async function copyResult() {
+  const text = els.resultShare.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Result copied.');
+  } catch {
+    // No clipboard access (insecure page, denied): select it so Ctrl/Cmd+C works.
+    const range = document.createRange();
+    range.selectNodeContents(els.resultShare);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    showToast('Press Ctrl+C (or Cmd+C) to copy.');
+  }
+}
+
+/** Mark the Daily button: a dot while today's dungeon is unplayed, filled while in a daily. */
+function updateDailyButton() {
+  const key = dailyKey(new Date());
+  const button = els.dailyBtn;
+  button.classList.remove('todo', 'active', 'practice');
+  if (daily) {
+    button.classList.add(daily.official ? 'active' : 'practice');
+    button.textContent = daily.official ? 'Daily' : 'Practice';
+    button.setAttribute('aria-label', `${daily.official ? 'Daily challenge' : 'Daily challenge practice'} for ${daily.key} in progress. Open the menu`);
+  } else {
+    const todo = !refreshDailyResults()[key];
+    if (todo) button.classList.add('todo');
+    button.textContent = 'Daily';
+    button.setAttribute('aria-label', todo ? "Daily challenge: today's dungeon is waiting" : 'Daily challenge');
+  }
 }
 
 els.heroBtn.addEventListener('click', () => openHeroPicker({ dismissable: true }));
+els.dailyBtn.addEventListener('click', () => openHeroPicker({ dismissable: true, tab: 'daily' }));
 els.heroClose.addEventListener('click', closeModal);
 els.heroStart.addEventListener('click', () => {
+  const asDaily = activeTab === 'daily';
   const chosen = heroById(els.heroList.querySelector('input:checked')?.value);
   closeModal();
-  startRun(chosen);
+  if (asDaily) startDaily();
+  else startRun(chosen);
 });
+
+// Tabs: click, or Left/Right to switch like a native tab list.
+for (const [tab, name] of [[els.tabFree, 'free'], [els.tabDaily, 'daily']]) {
+  tab.addEventListener('click', () => selectTab(name));
+  tab.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const other = name === 'free' ? els.tabDaily : els.tabFree;
+    selectTab(name === 'free' ? 'daily' : 'free');
+    other.focus();
+  });
+}
+
+els.resultCopy.addEventListener('click', copyResult);
+els.resultClose.addEventListener('click', closeModal);
+els.resultAgain.addEventListener('click', () => {
+  closeModal();
+  openHeroPicker({ dismissable: true });
+});
+// Back from another tab or a long break: the day may have turned over.
+window.addEventListener('focus', updateDailyButton);
 
 async function init() {
   await loadDictionary();
   renderMap();
+  updateDailyButton();
   // A returning player goes straight in as their last hero; a new one chooses.
   const saved = savedHeroId();
   if (!saved || !Object.hasOwn(HEROES, saved)) openHeroPicker({ dismissable: false });
