@@ -836,9 +836,13 @@ function describeResult(r) {
   return `${r.score} Score \u00b7 ${r.retreats} ${r.retreats === 1 ? 'retreat' : 'retreats'} \u00b7 ${r.hintsUsed} ${r.hintsUsed === 1 ? 'hint' : 'hints'}`;
 }
 
+/** The day the Daily tab is currently showing (it can go stale if left open past midnight UTC). */
+let shownDailyKey = null;
+
 function renderDailyPanel() {
   const now = new Date();
   const key = dailyKey(now);
+  shownDailyKey = key;
   const todaysHero = dailyHero(key);
   const results = refreshDailyResults();
   const record = results[key];
@@ -919,7 +923,7 @@ function startRun(chosen, dailyRun = null) {
 }
 
 function startDaily() {
-  const key = dailyKey(new Date());
+  const key = shownDailyKey ?? dailyKey(new Date());
   startRun(dailyHero(key), { key, official: !refreshDailyResults()[key] });
 }
 
@@ -1014,6 +1018,15 @@ els.heroBtn.addEventListener('click', () => openHeroPicker({ dismissable: true }
 els.dailyBtn.addEventListener('click', () => openHeroPicker({ dismissable: true, tab: 'daily' }));
 els.heroClose.addEventListener('click', closeModal);
 els.heroStart.addEventListener('click', () => {
+  if (activeTab === 'daily' && dailyKey(new Date()) !== shownDailyKey) {
+    // The panel was left open across midnight UTC: what it shows (date, hero,
+    // result) is yesterday's. Show the new day and let the player decide,
+    // rather than silently starting a dungeon other than the one displayed.
+    renderDailyPanel();
+    updateStartButton();
+    showToast('A new daily dungeon is ready. Check the details, then start.');
+    return;
+  }
   const asDaily = activeTab === 'daily';
   const chosen = heroById(els.heroList.querySelector('input:checked')?.value);
   closeModal();

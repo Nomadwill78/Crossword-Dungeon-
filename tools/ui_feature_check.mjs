@@ -180,8 +180,14 @@ async function dailyChecks(profile) {
   const c = C.page;
   await c.click('#daily-btn');
   check((await c.$eval('#daily-body', (e) => e.innerText)).includes(DAY), 'just before midnight it is still today\'s dungeon');
-  await c.keyboard.press('Escape');
+  // The panel stays open while midnight passes, then the player presses Start.
   await C.context.clock.setFixedTime(new Date(`${NEXT_DAY}T00:00:30Z`));
+  await c.click('#hero-start');
+  check(!(await isHidden(c, '#hero-modal')), 'pressing Start on a panel left open past midnight does not start anything');
+  check(await c.$eval('#daily-btn', (x) => !x.classList.contains('active') && !x.classList.contains('practice')), 'no run began');
+  check((await c.$eval('#daily-body', (e) => e.innerText)).includes(NEXT_DAY), 'the panel now shows the new day instead');
+  check(await c.$eval('#toast', (t) => t.classList.contains('show') && /new daily dungeon/.test(t.textContent)), 'and says why');
+  await c.keyboard.press('Escape');
   await c.click('#daily-btn');
   const nextPanel = await c.$eval('#daily-body', (e) => e.innerText);
   check(nextPanel.includes(NEXT_DAY) && nextPanel.includes(`Today's hero: ${dailyHero(NEXT_DAY).name}`), 'after midnight the same open page offers the new day and its hero');
