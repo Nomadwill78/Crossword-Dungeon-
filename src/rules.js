@@ -11,11 +11,15 @@ function escapeHtml(text) {
 /**
  * @param {{maxHp:number, retreatHp:number, monsterCount:number,
  *   healAmount:number|null, goldAmount:number|null, hintLevels:Array,
- *   hero?:{name:string, perkName:string, perkText:string}}} facts
+ *   hero?:{name:string, perkName:string, perkText:string},
+ *   hardcore?:{active:boolean, rules:{turnSeconds:number, freeWrongGuesses:number,
+ *   wrongGuessHp:number, scoreMultiplier:number}}}} facts
  * @returns {Array<{title:string, paragraphs?:string[], items?:string[]}>}
  */
 export function rulesSections(facts) {
-  const { maxHp, retreatHp, monsterCount, healAmount, goldAmount, hintLevels, hero } = facts;
+  const { maxHp, retreatHp, monsterCount, healAmount, goldAmount, hintLevels, hero, hardcore } = facts;
+  const hc = hardcore?.active ? hardcore.rules : null;
+  const retries = hc?.freeWrongGuesses;
   const treasure = [
     goldAmount ? `gold is worth +${goldAmount} Score` : null,
     healAmount ? `a potion heals ${healAmount} HP` : null,
@@ -31,26 +35,34 @@ export function rulesSections(facts) {
     {
       title: 'Opening corridors',
       paragraphs: [
-        'Read a clue, type the answer, and press Solve to open that corridor. You can only try a corridor that touches one you have already opened. A wrong answer costs nothing, so guess freely.',
+        `Read a clue, type the answer, and press Solve to open that corridor. You can only try a corridor that touches one you have already opened. ${
+          hc
+            ? `Hardcore: ${retries === 1 ? 'your first wrong answer' : `your first ${retries} wrong answers`} on each clue ${retries === 1 ? 'is' : 'are'} free; after that each wrong answer costs ${hc.wrongGuessHp} HP (never your last HP).`
+            : 'A wrong answer costs nothing, so guess freely.'
+        }`,
       ],
     },
     {
       title: 'Battles',
       paragraphs: [
-        'Opening a monster corridor starts a word battle. Tap letter tiles to build a word of 3 or more letters, then Cast Word. Real words hurt the monster; longer words, rare letters and unbroken streaks hurt more, and the dungeon\'s own theme words deal double. Defeat the monster to clear the corridor.',
+        `Opening a monster corridor starts a word battle. Tap letter tiles to build a word of 3 or more letters, then Cast Word. Real words hurt the monster; longer words, rare letters and unbroken streaks hurt more, and the dungeon's own theme words deal double. Defeat the monster to clear the corridor.${
+          hc ? ` Hardcore: you have ${hc.turnSeconds} seconds for each word. If the clock runs out the turn is wasted and the monster hits you.` : ''
+        }`,
       ],
     },
     {
       title: 'Your HP',
       paragraphs: [
         `You have ${maxHp} HP. You lose HP when you cast something that is not a word (the monster hits back, and bosses hit hardest) and when you pay for a hint with HP.`,
-        `If your HP reaches 0 you retreat: the battle is lost, the monster stays, and you return with ${retreatHp} HP to try again.`,
+        hc
+          ? 'If your HP reaches 0 the run is over. There is no retreat in hardcore.'
+          : `If your HP reaches 0 you retreat: the battle is lost, the monster stays, and you return with ${retreatHp} HP to try again.`,
       ],
     },
     {
       title: 'Score',
       paragraphs: [
-        `Your score is the damage you deal in battles${treasure.length ? `, plus treasure rooms (${treasure.join(', ')})` : ''}. Paying for hints with Score takes it back out.`,
+        `Your score is the damage you deal in battles${treasure.length ? `, plus treasure rooms (${treasure.join(', ')})` : ''}. Paying for hints with Score takes it back out.${hc ? ` Hardcore multiplies your final Score by \u00d7${hc.scoreMultiplier}.` : ''}`,
       ],
     },
     {
@@ -62,6 +74,20 @@ export function rulesSections(facts) {
       paragraphs: ['Stuck? Open Hints on any clue you can answer. The levels unlock in order, and you pay with Score or HP, your choice (you can never spend your last HP):'],
       items: hintLevels.map((h) => `${h.name}: ${h.blurb} Costs ${h.cost.score} Score or ${h.cost.hp} HP.`),
     },
+    ...(hardcore
+      ? [{
+        title: hc ? 'Hardcore mode (on)' : 'Hardcore mode',
+        paragraphs: [
+          'A harsher way to play free runs, chosen when you start a new run. The Daily Challenge is always played on normal rules.',
+        ],
+        items: [
+          'No retreat: if your HP reaches 0 the run is over.',
+          `${hardcore.rules.turnSeconds} seconds for each word in battle. When the clock runs out the turn is wasted and the monster hits you. It pauses while this card is open or the tab is hidden.`,
+          `${hardcore.rules.freeWrongGuesses === 1 ? 'One free retry' : `${hardcore.rules.freeWrongGuesses} free retries`} per clue. After that each wrong answer costs ${hardcore.rules.wrongGuessHp} HP, but never your last HP.`,
+          `Your final Score is multiplied by \u00d7${hardcore.rules.scoreMultiplier}.`,
+        ],
+      }]
+      : []),
     ...(hero
       ? [{
         title: 'Your hero',

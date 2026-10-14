@@ -54,6 +54,21 @@ Then open `http://localhost:8080/`.
   Your last hero is remembered. To add one: give it an entry in `HEROES` and
   `HERO_LIST`, a palette in `main.css` (`[data-hero="..."]`) and its gear in
   `GEAR` in `src/avatar.js`.
+- **Hardcore mode** (a checkbox in the Free play tab of the new-run picker; your
+  choice is remembered): a harsher way to play free runs, with its numbers in
+  one place (`src/hardcore.js`) so the game, the picker and the rules card agree.
+  - **No retreat**: at 0 HP the run is over.
+  - **A 15-second clock** on every word you cast in battle; when it runs out the
+    turn is wasted and the monster hits you. It pauses while a dialog is open or
+    the tab is hidden.
+  - **One free retry per clue**: after that each wrong answer costs 2 HP, but
+    never your last HP (so a typo cannot end the run).
+  - **Final Score x1.5**, and your hardcore wins, falls and best Score are kept
+    on this device.
+
+  The Daily Challenge is always played on normal rules. The Godot design doc
+  gates hardcore behind player level 15; this build has no player levels, so it
+  is available from the start.
 - **Daily Challenge** (the Daily button in the header, or the Daily tab in the
   new-run picker): one dungeon a day, the same for everyone. The day is the UTC
   date and it fixes the grid layout, the hero, and every dice roll (battle
@@ -119,9 +134,9 @@ node tools/mobile_layout_check.mjs [screenshot-dir]
 ## Tests
 
 ```
-node --test "tests/web/*.test.mjs"      # hints, heroes, avatar, rules, seeding, daily (no dependencies)
+node --test "tests/web/*.test.mjs"      # hints, heroes, avatar, rules, seeding, daily, hardcore (no dependencies)
 node tools/ui_feature_check.mjs [dir]   # Playwright: ? modal, hero picker, portrait, hints, highlighting,
-                                        # and full daily-challenge playthroughs (PROFILE=0 for one viewport)
+                                        # and full daily and hardcore playthroughs (PROFILE=0 for one viewport)
 ```
 
 `tools/ui_feature_check.mjs` plays the game at desktop, phone and small-phone

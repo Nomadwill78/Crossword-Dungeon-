@@ -118,17 +118,10 @@ export class BattleSession {
     const word = this.currentWord();
 
     if (word.length < 3 || !this.dictionary.has(word)) {
-      this.comboStreak = 0;
-      const playerDamage = Math.max(1, this.monster.attack + Math.floor(this.rng() * 3) - 1);
-      this.playerHP = Math.max(0, this.playerHP - playerDamage);
-      this.clearSelection();
-      this.log.unshift(`"${word || '—'}" isn't a word the dungeon recognizes. ${this.monster.name} hits you for ${playerDamage}.`);
-      if (this.playerHP <= 0) {
-        this.over = true;
-        this.won = false;
-        return { valid: false, word, playerDamage, playerDefeated: true };
-      }
-      return { valid: false, word, playerDamage };
+      return this._wasteTurn(
+        word,
+        (damage) => `"${word || '—'}" isn't a word the dungeon recognizes. ${this.monster.name} hits you for ${damage}.`
+      );
     }
 
     const base = [...word].reduce((sum, l) => sum + (LETTER_VALUES[l] ?? 1), 0);
@@ -158,6 +151,37 @@ export class BattleSession {
       return { valid: true, word, damage, combo, monsterDefeated: true };
     }
     return { valid: true, word, damage, combo };
+  }
+
+  /**
+   * A turn spent on nothing: the combo breaks and the monster hits back.
+   * Shared by a rejected word and by running out of time.
+   */
+  _wasteTurn(word, message, extra = {}) {
+    this.comboStreak = 0;
+    const playerDamage = Math.max(1, this.monster.attack + Math.floor(this.rng() * 3) - 1);
+    this.playerHP = Math.max(0, this.playerHP - playerDamage);
+    this.clearSelection();
+    this.log.unshift(message(playerDamage));
+    if (this.playerHP <= 0) {
+      this.over = true;
+      this.won = false;
+      return { valid: false, word, playerDamage, playerDefeated: true, ...extra };
+    }
+    return { valid: false, word, playerDamage, ...extra };
+  }
+
+  /**
+   * The clock ran out (hardcore): whatever was selected is lost and the monster
+   * hits back, exactly like casting something that is not a word.
+   */
+  timeOut() {
+    if (this.over) return { valid: false, word: '', timedOut: true };
+    return this._wasteTurn(
+      this.currentWord(),
+      (damage) => `Out of time! ${this.monster.name} hits you for ${damage}.`,
+      { timedOut: true }
+    );
   }
 
   _refillUsedTiles() {
