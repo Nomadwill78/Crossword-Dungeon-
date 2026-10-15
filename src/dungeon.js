@@ -2,6 +2,7 @@ import { generateCrossword } from './crossword.js';
 import { HINT_LEVELS, MIN_HP_AFTER_HINT, isVowel } from './hints.js';
 import { freeHintLevels, maxHpBonus } from './heroes.js';
 import { hashSeed, randomInt, seededRng } from './rng.js';
+import { HARDCORE, finalScore as scaledScore } from './hardcore.js';
 
 const PLAYER_MAX_HP = 40;
 
@@ -58,12 +59,18 @@ function cellKey(r, c) {
  * same grid, the same starting letters in each battle, the same monster hits
  * and the same hint letters. The Daily Challenge uses the date as the seed.
  * Without one, everything is random.
+ *
+ * `options.hardcore` turns on the harsher rules in hardcore.js: no retreat at
+ * 0 HP (the run is over), and HP lost to wrong answers after the free retry.
  */
 export class DungeonRun {
   constructor(levelData, hero = null, options = {}) {
     this.level = levelData;
     this.hero = hero;
     this.seed = options.seed ?? null;
+    this.hardcore = options.hardcore === true;
+    this.fallen = false; // hardcore: HP hit 0 and the run is over
+    this.wrongGuesses = new Map(); // placement index -> wrong answers so far
     this.rng = this.seed === null ? Math.random : seededRng(`${this.seed}:run`);
     this.battleCounts = new Map(); // placement index -> battles started there
     const { grid, placements, width, height } = buildGrid(levelData.entries, this.seed);
@@ -155,9 +162,9 @@ export class DungeonRun {
    */
   attemptSolve(index, guess) {
     const p = this.placements[index];
-    if (!p || this.solved.has(index)) return { correct: false };
+    if (!p || this.solved.has(index) || this.fallen) return { correct: false };
     const normalized = guess.trim().toUpperCase();
-    if (normalized !== p.word) return { correct: false };
+    if (normalized !== p.word) return this._wrongAnswer(index, normalized);
 
     this.solved.add(index);
     this._reveal(p);
@@ -174,6 +181,28 @@ export class DungeonRun {
     return { correct: true, placement: p, outcome: 'none' };
   }
 
+  /** Wrong answers are free, except in hardcore after the free retries. */
+  _wrongAnswer(index, normalized) {
+    if (!this.hardcore || normalized === '') return { correct: false, penalty: 0 };
+    const count = (this.wrongGuesses.get(index) ?? 0) + 1;
+    this.wrongGuesses.set(index, count);
+    if (count <= HARDCORE.freeWrongGuesses) return { correct: false, penalty: 0, freeRetry: true };
+    const penalty = Math.min(HARDCORE.wrongGuessHp, this.playerHP - MIN_HP_AFTER_HINT);
+    this.playerHP -= Math.max(0, penalty);
+    return { correct: false, penalty: Math.max(0, penalty) };
+  }
+
+  /** Free wrong answers left on this clue (hardcore); 0 outside hardcore. */
+  retriesLeft(index) {
+    if (!this.hardcore) return 0;
+    return Math.max(0, HARDCORE.freeWrongGuesses - (this.wrongGuesses.get(index) ?? 0));
+  }
+
+  /** The Score this run is worth: multiplied in hardcore. */
+  finalScore() {
+    return scaledScore(this.score, this.hardcore);
+  }
+
   _applyReward(reward) {
     if (reward.type === 'heal') {
       this.playerHP = Math.min(this.playerMaxHP, this.playerHP + reward.amount);
@@ -185,10 +214,18 @@ export class DungeonRun {
   }
 
   markBattleResolved(index, { won, remainingPlayerHP, scoreGained }) {
-    this.playerHP = Math.max(0, Math.min(this.playerMaxHP, remainingPlayerHP));
     this.score += scoreGained ?? 0;
-    if (won) this.cleared.add(index);
-    else this.retreats += 1;
+    if (won) {
+      this.playerHP = Math.max(0, Math.min(this.playerMaxHP, remainingPlayerHP));
+      this.cleared.add(index);
+    } else if (this.hardcore) {
+      // No retreat: this is where the run ends.
+      this.playerHP = 0;
+      this.fallen = true;
+    } else {
+      this.playerHP = Math.max(0, Math.min(this.playerMaxHP, remainingPlayerHP));
+      this.retreats += 1;
+    }
   }
 
   /**
@@ -214,7 +251,7 @@ export class DungeonRun {
   /** Hints are for corridors you can attempt right now and have not solved. */
   canHint(index) {
     const p = this.placements[index];
-    return !!p && !this.solved.has(index) && this.isReachable(index);
+    return !!p && !this.solved.has(index) && this.isReachable(index) && !this.fallen;
   }
 
   /** True if the player can already see letter `i` of the corridor: it is

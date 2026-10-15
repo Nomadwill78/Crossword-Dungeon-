@@ -13,6 +13,7 @@
       <div class="title-row">
         <h1>Wordsmith's Gambit</h1>
         <button id="daily-btn" class="daily-btn" type="button" aria-haspopup="dialog">Daily</button>
+        <span id="hc-badge" class="hc-badge" hidden title="Hardcore run: no retreat, a clock on every word">Hardcore</span>
       </div>
       <div id="hud-stats">
         <div class="stat hp-stat">
@@ -44,6 +45,10 @@
           <h2 id="monster-name"></h2>
           <div class="bar monster-bar"><div id="monster-hp-fill" class="fill"></div></div>
           <span id="monster-hp-text"></span>
+          <div id="turn-timer" class="turn-timer" role="timer" aria-label="Time left for this word" hidden>
+            <div class="bar timer-bar"><div id="turn-fill" class="fill"></div></div>
+            <span id="turn-secs" class="turn-secs"></span>
+          </div>
         </div>
 
         <div id="battle-word">
@@ -82,6 +87,14 @@
           <p id="hero-note" class="hero-note" hidden></p>
           <div id="panel-free" role="tabpanel" aria-labelledby="tab-free">
             <div id="hero-list" class="hero-list" role="radiogroup" aria-label="Choose your hero"></div>
+            <label class="hardcore-toggle">
+              <input type="checkbox" id="hardcore-toggle" />
+              <span class="hc-text">
+                <strong>Hardcore mode</strong>
+                <span id="hardcore-desc" class="hc-desc"></span>
+                <span id="hardcore-stats" class="hc-stats"></span>
+              </span>
+            </label>
           </div>
           <div id="panel-daily" role="tabpanel" aria-labelledby="tab-daily" hidden>
             <div id="daily-body" class="daily-body"></div>

@@ -572,6 +572,53 @@ main { position: relative; }
 .modal-done.secondary { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
 
 /* ---------------------------------------------------------------------
+   Hardcore mode: toggle, badge, battle clock
+   --------------------------------------------------------------------- */
+.hc-badge {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--danger);
+  border-radius: 999px;
+  color: #ff9aa2;
+  background: var(--hp-bg);
+  font: bold 0.75rem var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hc-badge:not([hidden]) { display: inline-block; }
+
+.hardcore-toggle {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--panel-light);
+  border: 2px solid var(--stone);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.hardcore-toggle:has(input:checked) { border-color: var(--danger); background: var(--hp-bg); }
+.hardcore-toggle:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hardcore-toggle input { width: 1.4rem; height: 1.4rem; margin: 0.15rem 0 0; flex: none; accent-color: var(--danger); cursor: pointer; }
+.hc-text { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.hc-text strong { color: #ff9aa2; font-size: 1.05rem; }
+.hc-desc { color: var(--text); font-size: 0.9rem; line-height: 1.4; }
+.hc-stats { color: var(--text-dim); font-size: 0.85rem; }
+
+.turn-timer { align-items: center; justify-content: center; gap: 0.6rem; margin-top: 0.6rem; }
+.turn-timer:not([hidden]) { display: flex; } /* not on the base rule, or it would override [hidden] */
+.timer-bar { width: min(260px, 60vw); background: var(--stone-dark); }
+.timer-bar .fill { background: linear-gradient(90deg, var(--accent), #8fe3f2); height: 100%; width: 100%; transition: width 0.12s linear, background 0.2s ease; }
+.turn-timer.low .timer-bar .fill { background: var(--danger); }
+.turn-secs { min-width: 2.2ch; font-variant-numeric: tabular-nums; color: var(--text); font-weight: bold; }
+.turn-timer.low .turn-secs { color: #ff9aa2; }
+.turn-timer.paused { opacity: 0.5; }
+
+.hc-note { margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--text-dim); }
+.hc-note.costly { color: #ff9aa2; }
+.clue-item.dead { opacity: 0.55; }
+
+/* ---------------------------------------------------------------------
    Hero picker
    --------------------------------------------------------------------- */
 .hero-card-wrap { width: min(44rem, 100%); }
@@ -757,6 +804,7 @@ main { position: relative; }
 @media (prefers-reduced-motion: reduce) {
   .avatar, .avatar.hit, .help-btn.attention, .cell.just-revealed { animation: none; }
   #toast { transition: none; }
+  .timer-bar .fill { transition: none; }
 }
 
 body.modal-open { overflow: hidden; }

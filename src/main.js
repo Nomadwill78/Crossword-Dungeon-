@@ -6,6 +6,9 @@ import { HeroAvatar, avatarSvg } from './avatar.js';
 import { HEROES, HERO_LIST, damageBonus, describePerk, heroById } from './heroes.js';
 import { renderRulesHtml } from './rules.js';
 import {
+  HARDCORE, PREF_KEY as HARDCORE_PREF_KEY, describeHardcore, loadStats, recordRun, saveStats,
+} from './hardcore.js';
+import {
   computeStreak, dailyHero, dailyKey, dailySeed, formatCountdown, loadResults, msUntilNextDaily,
   recordResult, saveResults, shareText,
 } from './daily.js';
@@ -45,6 +48,13 @@ const els = {
   heroList: document.getElementById('hero-list'),
   heroClose: document.getElementById('hero-close'),
   heroStart: document.getElementById('hero-start'),
+  hcBadge: document.getElementById('hc-badge'),
+  turnTimer: document.getElementById('turn-timer'),
+  turnFill: document.getElementById('turn-fill'),
+  turnSecs: document.getElementById('turn-secs'),
+  hardcoreToggle: document.getElementById('hardcore-toggle'),
+  hardcoreDesc: document.getElementById('hardcore-desc'),
+  hardcoreStats: document.getElementById('hardcore-stats'),
   dailyBtn: document.getElementById('daily-btn'),
   tabFree: document.getElementById('tab-free'),
   tabDaily: document.getElementById('tab-daily'),
@@ -77,6 +87,10 @@ const storage = {
   setItem: (key, value) => localStorage.setItem(key, value),
 };
 let dailyResults = loadResults(storage);
+let hardcoreStats = loadStats(storage);
+/** Whether the last free run was hardcore (the picker's toggle remembers it). */
+let hardcorePref = false;
+try { hardcorePref = localStorage.getItem(HARDCORE_PREF_KEY) === '1'; } catch { /* no storage */ }
 
 /** Pick up anything saved by another tab, without losing what is only in memory. */
 function refreshDailyResults() {
@@ -94,7 +108,7 @@ let freeHero = hero;
 let daily = null;
 /** True once this run's win has been announced (and, for a daily, recorded). */
 let victoryShown = false;
-let dungeon = new DungeonRun(LEVEL_ONE, hero);
+let dungeon = new DungeonRun(LEVEL_ONE, hero, { hardcore: hardcorePref });
 let battle = null;
 let activeBattlePlacementIndex = null;
 
@@ -126,6 +140,7 @@ function setHp(hp, maxHp) {
 }
 
 function renderHud() {
+  els.hcBadge.hidden = !dungeon.hardcore;
   setHp(dungeon.playerHP, dungeon.playerMaxHP);
   els.scoreText.textContent = dungeon.score;
 }
@@ -297,7 +312,9 @@ function renderClueItem(p) {
   text.textContent = p.clue ?? (p.isEntrance ? 'Your starting corridor.' : '');
   item.appendChild(text);
 
-  if (status === 'open') {
+  if (dungeon.fallen) item.classList.add('dead');
+
+  if (status === 'open' && !dungeon.fallen) {
     appendHintReadout(item, p);
 
     const form = document.createElement('form');
@@ -316,8 +333,9 @@ function renderClueItem(p) {
       handleAttempt(p.index, input.value, item);
     });
     item.appendChild(form);
+    if (dungeon.hardcore) item.appendChild(hardcoreNote(p.index));
     item.appendChild(renderHintPanel(p));
-  } else if (status === 'pending-battle') {
+  } else if (status === 'pending-battle' && !dungeon.fallen) {
     const btn = document.createElement('button');
     btn.className = 'danger';
     btn.textContent = `Fight ${p.monster.name}`;
@@ -496,19 +514,46 @@ function renderMap() {
   renderHud();
 }
 
+/** The line under a clue's answer box in hardcore: what a wrong answer costs. */
+function hardcoreNoteText(index) {
+  const left = dungeon.retriesLeft(index);
+  return left > 0
+    ? `${left} free ${left === 1 ? 'retry' : 'retries'} left on this clue`
+    : `Wrong answers on this clue cost ${HARDCORE.wrongGuessHp} HP`;
+}
+
+function hardcoreNote(index) {
+  const note = document.createElement('p');
+  note.className = `hc-note${dungeon.retriesLeft(index) > 0 ? '' : ' costly'}`;
+  note.textContent = hardcoreNoteText(index);
+  return note;
+}
+
 function handleAttempt(index, guess, itemEl) {
+  if (dungeon.fallen) return;
   const result = dungeon.attemptSolve(index, guess);
   if (!result.correct) {
     itemEl.classList.remove('shake');
     void itemEl.offsetWidth;
     itemEl.classList.add('shake');
+    if (dungeon.hardcore) {
+      const note = itemEl.querySelector('.hc-note');
+      if (note) {
+        note.textContent = hardcoreNoteText(index);
+        note.classList.toggle('costly', dungeon.retriesLeft(index) === 0);
+      }
+      if (result.penalty > 0) {
+        renderHud();
+        showToast(`Wrong answer: -${result.penalty} HP`);
+      } else if (result.freeRetry) {
+        showToast('Wrong answer. That was your free retry.');
+      }
+    }
     return;
   }
   renderMap();
   if (result.outcome === 'battle') {
     startBattle(index);
-  } else if (result.outcome === 'reward') {
-    checkVictory();
   } else {
     checkVictory();
   }
@@ -526,9 +571,96 @@ function startBattle(index) {
   els.battleView.hidden = false;
   window.scrollTo(0, 0);
   renderBattle();
+  startTurnClock();
+}
+
+// ---- the hardcore battle clock -----------------------------------------------
+
+let turnClock = null; // { remainingMs, last, timer } while a hardcore word is on the clock
+
+/** The clock stands still while the player reads a card, or is away. */
+const turnPaused = () => document.hidden || openModalEl !== null || !els.overlay.hidden;
+
+function renderTurnClock() {
+  const seconds = HARDCORE.turnSeconds;
+  const left = Math.max(0, turnClock.remainingMs) / 1000;
+  els.turnFill.style.width = `${Math.round((left / seconds) * 100)}%`;
+  els.turnSecs.textContent = Math.ceil(left);
+  els.turnTimer.classList.toggle('low', left <= 5);
+}
+
+/** Give the player a fresh clock for the next word (hardcore battles only). */
+function startTurnClock() {
+  stopTurnClock();
+  if (!dungeon.hardcore || !battle || battle.over) return;
+  turnClock = {
+    remainingMs: HARDCORE.turnSeconds * 1000,
+    last: performance.now(),
+    timer: setInterval(tickTurnClock, 100),
+  };
+  els.turnTimer.hidden = false;
+  els.turnTimer.classList.remove('paused');
+  renderTurnClock();
+}
+
+function stopTurnClock() {
+  if (turnClock) clearInterval(turnClock.timer);
+  turnClock = null;
+  els.turnTimer.hidden = true;
+}
+
+function tickTurnClock() {
+  if (!turnClock || !battle || battle.over) return;
+  const now = performance.now();
+  // A phone that suspended the page must not come back to an instant timeout.
+  const elapsed = Math.min(now - turnClock.last, 500);
+  turnClock.last = now;
+  const paused = turnPaused();
+  els.turnTimer.classList.toggle('paused', paused);
+  if (paused) return;
+  turnClock.remainingMs -= elapsed;
+  if (turnClock.remainingMs <= 0) {
+    battle.timeOut();
+    showToast('Out of time!');
+    finishCast();
+    return;
+  }
+  renderTurnClock();
+}
+
+/** What follows a cast (or a timeout): redraw, then either end the battle or restart the clock. */
+function finishCast() {
+  renderBattle();
+  if (!battle.over) {
+    startTurnClock();
+    return;
+  }
+  stopTurnClock();
+  const finished = battle;
+  setTimeout(() => {
+    // The player may have started a new run in the meantime.
+    if (battle !== finished) return;
+    const cleared = dungeon.monsterPlacements().filter((m) => dungeon.isCleared(m.index)).length;
+    const total = dungeon.monsterPlacements().length;
+    showOverlay(
+      finished.won ? 'Victory!' : dungeon.hardcore ? 'You have fallen!' : 'Retreat!',
+      finished.won
+        ? `${finished.monster.name} is defeated. The corridor is clear.`
+        : dungeon.hardcore
+          ? `${finished.monster.name} ends your run. ${cleared} of ${total} monster corridors cleared.`
+          : `You barely escape ${finished.monster.name}. Patch up and try again.`,
+      () => endBattle()
+    );
+  }, 300);
+}
+
+function recordHardcoreRun(won) {
+  hardcoreStats = recordRun(hardcoreStats, { won, score: dungeon.finalScore() });
+  if (!saveStats(storage, hardcoreStats)) showToast("Couldn't save your hardcore record on this device.");
 }
 
 function endBattle() {
+  stopTurnClock();
   const won = battle.won;
   dungeon.markBattleResolved(activeBattlePlacementIndex, {
     won,
@@ -541,6 +673,12 @@ function endBattle() {
   els.mapView.hidden = false;
   window.scrollTo(0, 0);
   renderMap();
+  if (dungeon.fallen) {
+    // Hardcore: no retreat. The run is over.
+    recordHardcoreRun(false);
+    openHeroPicker({ dismissable: true, title: 'Play again?' });
+    return;
+  }
   if (won) checkVictory();
 }
 
@@ -594,23 +732,7 @@ function renderBattle() {
 els.submitWord.addEventListener('click', () => {
   if (!battle || battle.over) return;
   battle.submit();
-  if (battle.over) {
-    renderBattle();
-    const finished = battle;
-    setTimeout(() => {
-      // The player may have started a new run in the meantime.
-      if (battle !== finished) return;
-      showOverlay(
-        finished.won ? 'Victory!' : 'Retreat!',
-        finished.won
-          ? `${finished.monster.name} is defeated. The corridor is clear.`
-          : `You barely escape ${finished.monster.name}. Patch up and try again.`,
-        () => endBattle()
-      );
-    }, 300);
-    return;
-  }
-  renderBattle();
+  finishCast();
 });
 
 els.clearWord.addEventListener('click', () => {
@@ -644,7 +766,10 @@ function checkVictory() {
   if (!dungeon.isVictory() || victoryShown) return;
   victoryShown = true;
   const title = 'The Lexicon Crypt is Cleared!';
-  const text = `Final score: ${dungeon.score}. Every monster corridor has been silenced.`;
+  const text = dungeon.hardcore
+    ? `Hardcore! Score ${dungeon.score} \u00d7${HARDCORE.scoreMultiplier} = ${dungeon.finalScore()}. Every monster corridor has been silenced.`
+    : `Final score: ${dungeon.score}. Every monster corridor has been silenced.`;
+  if (dungeon.hardcore) recordHardcoreRun(true);
   if (daily) {
     // Recorded now, not when the overlay is dismissed, so closing the tab can't lose it.
     const outcome = finishDaily();
@@ -734,6 +859,7 @@ function openHelp() {
     goldAmount: rewardAmount('score'),
     hintLevels: HINT_LEVELS,
     hero: { name: hero.name, perkName: hero.perk.name, perkText: describePerk(hero) },
+    hardcore: { active: dungeon.hardcore, rules: HARDCORE },
   });
   els.helpBtn.classList.remove('attention');
   try { localStorage.setItem(HELP_SEEN_KEY, '1'); } catch { /* private mode: fine */ }
@@ -793,7 +919,7 @@ function renderHeroList(selectedId) {
 
 /** True if starting over would throw something away. */
 function runHasProgress() {
-  if (dungeon.isVictory()) return false;
+  if (dungeon.isVictory() || dungeon.fallen) return false;
   return battle !== null || dungeon.solved.size > 1 || dungeon.score !== 0 || dungeon.hintsUsed > 0;
 }
 
@@ -821,8 +947,18 @@ function updateStartButton() {
     const done = !!refreshDailyResults()[dailyKey(new Date())];
     els.heroStart.textContent = done ? 'Practice (not recorded)' : "Play today's challenge";
   } else {
-    els.heroStart.textContent = progress ? 'Start new run' : 'Begin run';
+    const hard = els.hardcoreToggle.checked ? ' hardcore' : '';
+    els.heroStart.textContent = progress ? `Start new${hard} run` : `Begin${hard} run`;
   }
+}
+
+function renderHardcoreToggle() {
+  els.hardcoreToggle.checked = hardcorePref;
+  els.hardcoreDesc.textContent = describeHardcore(HARDCORE).join(' ');
+  const { wins, falls, best } = hardcoreStats;
+  els.hardcoreStats.textContent = wins + falls === 0
+    ? 'No hardcore runs yet.'
+    : `Record: ${wins} ${wins === 1 ? 'win' : 'wins'} \u00b7 ${falls} ${falls === 1 ? 'fall' : 'falls'}${wins ? ` \u00b7 best ${best}` : ''}`;
 }
 
 function element(tag, className, text) {
@@ -884,6 +1020,7 @@ function openHeroPicker({ dismissable, title = 'New run', tab = 'free' }) {
   els.heroNote.textContent = 'Starting a new run will end your current one. Your progress will be lost.';
   els.heroClose.hidden = !dismissable;
   renderHeroList(freeHero.id);
+  renderHardcoreToggle();
   selectTab(tab);
   openModal(els.heroModal, {
     focus: tab === 'daily' ? els.heroStart : els.heroList.querySelector('input:checked'),
@@ -894,17 +1031,23 @@ function openHeroPicker({ dismissable, title = 'New run', tab = 'free' }) {
 /** Throw the current run away and begin a fresh one as [chosen]. A Daily
  * Challenge run is `{ key, official }`: seeded by the date, and recorded if no
  * run has been recorded for that day yet. */
-function startRun(chosen, dailyRun = null) {
+function startRun(chosen, dailyRun = null, hardcore = false) {
   dismissOverlay();
+  stopTurnClock();
   hero = chosen;
   daily = dailyRun;
   victoryShown = false;
   if (!daily) {
     freeHero = hero;
-    try { localStorage.setItem(HERO_KEY, hero.id); } catch { /* private mode: fine */ }
+    hardcorePref = hardcore;
+    try {
+      localStorage.setItem(HERO_KEY, hero.id);
+      localStorage.setItem(HARDCORE_PREF_KEY, hardcore ? '1' : '0');
+    } catch { /* private mode: fine */ }
   }
 
-  dungeon = new DungeonRun(LEVEL_ONE, hero, daily ? { seed: dailySeed(daily.key) } : {});
+  // The Daily Challenge is always the standard run, the same for everyone.
+  dungeon = new DungeonRun(LEVEL_ONE, hero, daily ? { seed: dailySeed(daily.key) } : { hardcore });
   battle = null;
   activeBattlePlacementIndex = null;
   activeIndex = null;
@@ -1031,8 +1174,9 @@ els.heroStart.addEventListener('click', () => {
   const chosen = heroById(els.heroList.querySelector('input:checked')?.value);
   closeModal();
   if (asDaily) startDaily();
-  else startRun(chosen);
+  else startRun(chosen, null, els.hardcoreToggle.checked);
 });
+els.hardcoreToggle.addEventListener('change', updateStartButton);
 
 // Tabs: click, or Left/Right to switch like a native tab list.
 for (const [tab, name] of [[els.tabFree, 'free'], [els.tabDaily, 'daily']]) {

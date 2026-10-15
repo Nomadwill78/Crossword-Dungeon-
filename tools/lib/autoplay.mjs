@@ -34,13 +34,13 @@ export function bestWord(letters) {
   return best;
 }
 
-const victoryShowing = (page) => page.evaluate(() => {
+const overlayTitle = (page) => page.evaluate(() => {
   const overlay = document.getElementById('overlay');
-  return !overlay.hidden && /Cleared/.test(document.getElementById('overlay-title').textContent);
+  return overlay.hidden ? '' : document.getElementById('overlay-title').textContent;
 });
 
 /** Casts one word (or a wasted single tile if nothing can be spelled). */
-async function castOnce(page) {
+export async function castOnce(page) {
   const letters = await page.$$eval('.rack-tile', (tiles) => tiles.map((t) => t.firstElementChild.textContent));
   const word = bestWord(letters);
   await page.evaluate((w) => {
@@ -53,13 +53,16 @@ async function castOnce(page) {
 }
 
 /**
- * Plays until the "Cleared!" overlay is on screen (it is left open for the
- * caller to dismiss). Returns the number of battle casts it took.
+ * Plays until the run ends: the "Cleared!" overlay (a win) or, in hardcore, the
+ * "You have fallen!" overlay (a fall). The overlay is left open for the caller
+ * to dismiss. Returns { outcome: 'won' | 'fell', casts }.
  */
-export async function playToVictory(page, { maxSteps = 600 } = {}) {
+export async function playUntilOver(page, { maxSteps = 600 } = {}) {
   let casts = 0;
   for (let step = 0; step < maxSteps; step += 1) {
-    if (await victoryShowing(page)) return casts;
+    const title = await overlayTitle(page);
+    if (/Cleared/.test(title)) return { outcome: 'won', casts };
+    if (/fallen/.test(title)) return { outcome: 'fell', casts };
 
     const state = await page.evaluate(() => ({
       overlay: !document.getElementById('overlay').hidden,
@@ -94,4 +97,11 @@ export async function playToVictory(page, { maxSteps = 600 } = {}) {
     }
   }
   throw new Error(`autoplay did not finish in ${maxSteps} steps`);
+}
+
+/** Like playUntilOver, but a fall is an error. Returns the number of casts. */
+export async function playToVictory(page, options) {
+  const { outcome, casts } = await playUntilOver(page, options);
+  if (outcome !== 'won') throw new Error('the hero fell before the dungeon was cleared');
+  return casts;
 }

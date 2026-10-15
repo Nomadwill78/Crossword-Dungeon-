@@ -9,7 +9,8 @@ import fs from 'node:fs';
 import { LEVEL_ONE } from '../src/wordlist.js';
 import { dailyHero } from '../src/daily.js';
 import { maxHpBonus } from '../src/heroes.js';
-import { playToVictory } from './lib/autoplay.mjs';
+import { bestWord, castOnce, playToVictory, playUntilOver } from './lib/autoplay.mjs';
+import { HARDCORE } from '../src/hardcore.js';
 import { startStaticServer } from './lib/static_server.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -41,7 +42,7 @@ const allProfiles = [
 // PROFILE=0,2 runs only those viewports (handy while iterating).
 const profiles = allProfiles.filter((_, i) => !process.env.PROFILE || process.env.PROFILE.split(',').includes(String(i)));
 
-async function open(profile, { hero = 'duelist', now = null, seed = {}, failDailySave = false } = {}) {
+async function open(profile, { hero = 'duelist', now = null, seed = {}, failDailySave = false, fakeClock = false } = {}) {
   const context = await browser.newContext({
     viewport: { width: profile.width, height: profile.height },
     hasTouch: profile.touch,
@@ -50,6 +51,8 @@ async function open(profile, { hero = 'duelist', now = null, seed = {}, failDail
   });
   // `now` pins the page's clock (the daily dungeon depends on the date).
   if (now) await context.clock.setFixedTime(now);
+  // fakeClock freezes time entirely until the test calls clock.runFor (for the battle clock).
+  if (fakeClock) await context.clock.install({ time: new Date('2026-10-12T12:00:00Z') });
   if (hero) {
     // Only if nothing is saved yet, so a reload keeps whatever the player chose.
     await context.addInitScript((id) => {
@@ -286,6 +289,230 @@ async function dailyChecks(profile) {
   await D.context.close();
 }
 
+
+// ---- hardcore mode -----------------------------------------------------------------
+
+const secs = (page) => page.$eval('#turn-secs', (e) => Number(e.textContent));
+const isHidden = (page, sel) => page.$eval(sel, (e) => e.hidden);
+const HC_PREF = { 'wordsmith-hardcore': '1' };
+
+/** Cast the best word on the rack (the player doing well in a battle). */
+async function castBestWord(page) {
+  const letters = await page.$$eval('.rack-tile', (t) => t.map((e) => e.firstElementChild.textContent));
+  const word = bestWord(letters);
+  await page.evaluate((w) => {
+    for (const ch of w) [...document.querySelectorAll('.rack-tile')].find((t) => t.firstElementChild.textContent === ch)?.click();
+    document.getElementById('submit-word').click();
+  }, word);
+}
+
+async function hardcoreChecks(profile) {
+  const box = (page, sel) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; });
+
+  // ---------------- the picker, wrong answers, and the clock ----------------
+  {
+    const { context, page, errors } = await open(profile, { hero: 'duelist' });
+    await page.click('#hero-btn');
+    check(!(await page.$eval('#hardcore-toggle', (c) => c.checked)), 'hardcore is off by default');
+    const desc = await page.$eval('#hardcore-desc', (e) => e.textContent);
+    check(desc.includes(`${HARDCORE.turnSeconds} seconds`) && desc.includes('No retreat') && desc.includes(`${HARDCORE.wrongGuessHp} HP`) && desc.includes(`×${HARDCORE.scoreMultiplier}`), 'the picker spells out the rules');
+    check((await page.$eval('#hardcore-stats', (e) => e.textContent)) === 'No hardcore runs yet.', 'and shows an empty record');
+    check((await page.$eval('#hero-start', (b) => b.textContent)) === 'Begin run', 'the button is "Begin run" while it is off');
+    await page.focus('#hardcore-toggle');
+    await page.keyboard.press('Space');
+    check(await page.$eval('#hardcore-toggle', (c) => c.checked), 'Space turns it on from the keyboard');
+    check((await page.$eval('#hero-start', (b) => b.textContent)) === 'Begin hardcore run', 'and the button says "Begin hardcore run"');
+    const toggleBox = await box(page, '.hardcore-toggle');
+    check(toggleBox.right <= profile.width && toggleBox.height >= 44, 'the toggle fits and is easy to hit');
+    const card = await box(page, '.hero-card-wrap');
+    check(card.right <= profile.width + 1, 'the picker still fits the screen width');
+    if (OUT) {
+      await page.$eval('.hardcore-toggle', (e) => e.scrollIntoView({ block: 'center' }));
+      await page.screenshot({ path: `${OUT}/ui_${profile.width}_hardcore_picker.png` });
+    }
+    await page.click('#tab-daily');
+    check(!(await page.$eval('#hardcore-toggle', (c) => c.offsetParent !== null)), 'the Daily tab has no hardcore option');
+    await page.click('#tab-free');
+    await page.$eval('#hero-start', (b) => b.scrollIntoView({ block: 'nearest' }));
+    await page.click('#hero-start');
+
+    check(!(await isHidden(page, '#hc-badge')), 'a hardcore run shows its badge');
+    check((await hpText(page)) === '40/40', 'at full HP');
+    check(await page.evaluate(() => localStorage.getItem('wordsmith-hardcore')) === '1', 'the choice is remembered');
+
+    // wrong answers: one free retry, then HP
+    const [card1] = await openCards(page);
+    const index = await card1.getAttribute('data-index');
+    const sel = `.clue-item[data-index="${index}"]`;
+    check(/1 free retry left/.test(await page.$eval(`${sel} .hc-note`, (n) => n.textContent)), 'each open clue says it has a free retry');
+    const wrong = async (value) => {
+      await page.$eval(`${sel} input`, (i, v) => { i.value = v; }, value);
+      await page.$eval(`${sel} form`, (f) => f.requestSubmit());
+    };
+    await wrong('');
+    check((await hpText(page)) === '40/40' && /1 free retry left/.test(await page.$eval(`${sel} .hc-note`, (n) => n.textContent)), 'a blank answer costs nothing and keeps the retry');
+    await wrong('NOPE');
+    check((await hpText(page)) === '40/40' && /free retry/.test(await page.$eval('#toast', (t) => t.textContent)), 'the first wrong answer is free');
+    check(new RegExp(`cost ${HARDCORE.wrongGuessHp} HP`).test(await page.$eval(`${sel} .hc-note`, (n) => n.textContent)), 'and the note now warns that more cost HP');
+    await wrong('STILLNO');
+    check((await hpText(page)) === `${40 - HARDCORE.wrongGuessHp}/40`, `the next one costs ${HARDCORE.wrongGuessHp} HP`);
+    check(new RegExp(`-${HARDCORE.wrongGuessHp} HP`).test(await page.$eval('#toast', (t) => t.textContent)), 'with a toast saying so');
+    await page.$eval(`${sel} input`, (i, v) => { i.value = v; }, answers.get(await clueOf(card1)));
+    await page.$eval(`${sel} form`, (f) => f.requestSubmit());
+    await page.waitForTimeout(60);
+    check(!!(await page.$('#battle-view:not([hidden])')) || !(await page.$(`${sel} form`)), 'the right answer still opens the corridor');
+
+    // the clock
+    if (await page.$('#battle-view:not([hidden])') === null) await reachBattle(page);
+    check(!(await isHidden(page, '#turn-timer')), 'a hardcore battle shows the clock');
+    const clockBox = await box(page, '#turn-timer');
+    check(clockBox.right <= profile.width && clockBox.bottom <= profile.height, 'and it fits on screen');
+    check(await secs(page) >= HARDCORE.turnSeconds - 1, `it starts at ${HARDCORE.turnSeconds}s`);
+    const fill = await box(page, '#turn-fill');
+    const track = await box(page, '.timer-bar');
+    check(fill.height >= 6 && fill.width >= track.width * 0.9, `the bar is drawn and full at the start (${Math.round(fill.width)}x${Math.round(fill.height)} of ${Math.round(track.width)}px)`);
+    if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_hardcore_battle.png` });
+
+    await page.waitForTimeout(2500);
+    const afterWait = await secs(page);
+    check(afterWait <= HARDCORE.turnSeconds - 2 && afterWait >= HARDCORE.turnSeconds - 5, `it counts down (${afterWait}s after 2.5s)`);
+    const drained = await box(page, '#turn-fill');
+    check(drained.width < track.width * 0.9 && drained.width > 0, 'and the bar drains with it');
+
+    // pauses while a card is open
+    await page.click('#help-btn');
+    const frozenAt = await secs(page);
+    await page.waitForTimeout(2200);
+    check(await secs(page) === frozenAt, 'the clock stands still while the rules card is open');
+    check(await page.$eval('#turn-timer', (t) => t.classList.contains('paused')), 'and looks paused');
+    check(/Hardcore mode \(on\)/.test(await page.$eval('#help-body', (e) => e.innerText)), 'the rules card knows hardcore is on');
+    check(!/you retreat:/.test(await page.$eval('#help-body', (e) => e.innerText)), 'and no longer promises a retreat');
+    await page.keyboard.press('Escape');
+
+    // a cast gives a fresh clock
+    const hpBefore = await hpText(page);
+    await castBestWord(page);
+    await page.waitForTimeout(150);
+    // A strong word can finish a weak first monster; then the battle is over and the clock must stop instead.
+    const monsterDied = await page.$eval('#monster-hp-text', (e) => e.textContent.startsWith('0/'));
+    if (monsterDied) {
+      check(await isHidden(page, '#turn-timer'), 'casting the killing blow stops the clock');
+    } else {
+      check(await secs(page) >= HARDCORE.turnSeconds - 1, 'casting a word resets the clock');
+    }
+    check((await hpText(page)) === hpBefore, 'and a good word costs no HP');
+    check(errors.length === 0, `no script errors (${errors.join('; ')})`);
+    await context.close();
+  }
+
+  // ---------------- the clock running out (time under test control) ----------------
+  {
+    const { context, page, errors } = await open(profile, { hero: 'duelist', seed: HC_PREF, fakeClock: true });
+    check(await reachBattle(page), 'reached a battle on a frozen clock');
+    check(await secs(page) === HARDCORE.turnSeconds, 'the clock starts full');
+    const hp0 = Number((await hpText(page)).split('/')[0]);
+    await page.clock.runFor((HARDCORE.turnSeconds - 1) * 1000);
+    check((await secs(page)) === 1 && Number((await hpText(page)).split('/')[0]) === hp0, 'with one second left nothing has happened yet');
+    await page.clock.runFor(1500);
+    const hp1 = Number((await hpText(page)).split('/')[0]);
+    check(hp1 < hp0, `at zero the monster hits (${hp0} -> ${hp1} HP)`);
+    check(/Out of time!/.test(await page.$eval('#battle-log', (l) => l.innerText)), 'the log says the time ran out');
+    check(await secs(page) >= HARDCORE.turnSeconds - 1, 'and the next word gets a fresh clock');
+    check(/Out of time/.test(await page.$eval('#toast', (t) => t.textContent)), 'with a toast');
+    // keep running out: eventually the hero falls and the clock stops for good
+    for (let i = 0; i < 40 && (await isHidden(page, '#overlay')); i += 1) await page.clock.runFor(HARDCORE.turnSeconds * 1000);
+    await page.clock.runFor(400);
+    check(/fallen/.test(await page.$eval('#overlay-title', (t) => t.textContent)), 'letting the clock run out again and again ends the run');
+    check(await isHidden(page, '#turn-timer'), 'and the clock goes away');
+    check(errors.length === 0, `no script errors (${errors.join('; ')})`);
+    await context.close();
+  }
+
+  // ---------------- permadeath ----------------
+  {
+    const { context, page, errors } = await open(profile, { hero: 'duelist', seed: HC_PREF });
+    check(await reachBattle(page), 'reached a battle');
+    for (let i = 0; i < 60 && (await isHidden(page, '#overlay')); i += 1) {
+      await page.evaluate(() => { document.querySelector('.rack-tile')?.click(); document.getElementById('submit-word').click(); });
+      await page.waitForTimeout(20);
+    }
+    await page.waitForSelector('#overlay:not([hidden])');
+    check((await page.$eval('#overlay-title', (t) => t.textContent)) === 'You have fallen!', 'at 0 HP: "You have fallen!", not "Retreat!"');
+    check(/corridors cleared/.test(await page.$eval('#overlay-text', (t) => t.textContent)), 'with how far the hero got');
+    await page.evaluate(() => document.getElementById('overlay').click());
+    check(!(await isHidden(page, '#hero-modal')) && (await page.$eval('#hero-title', (t) => t.textContent)) === 'Play again?', 'closing it offers a new run');
+    check(await page.$eval('#hero-note', (n) => n.hidden), 'with no warning about losing progress');
+    check((await hpText(page)) === '0/40', 'HP stays at 0: there was no retreat');
+    check(await page.$eval('#avatar', (e) => e.dataset.state) === 'defeated', 'the hero is defeated');
+    check(/Record: 0 wins · 1 fall/.test(await page.$eval('#hardcore-stats', (e) => e.textContent)), 'the fall is in the record');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('wordsmith-hardcore-stats')));
+    check(saved.falls === 1 && saved.wins === 0, 'and saved on this device');
+    await page.keyboard.press('Escape');
+    check((await page.$$('.clue-item form')).length === 0, 'the dead run cannot answer clues any more');
+    check((await page.$$('.clue-item details.hints')).length === 0, 'or buy hints');
+    check((await page.$$('.clue-item button.danger')).length === 0, 'or fight');
+    check((await page.$$('.clue-item.dead')).length > 0, 'the cards are greyed out');
+    check(!(await isHidden(page, '#hc-badge')), 'and the badge still marks it as a hardcore run');
+
+    // a normal run straight after: everything is back to normal
+    await page.click('#hero-btn');
+    await page.click('#hardcore-toggle');
+    check((await page.$eval('#hero-start', (b) => b.textContent)) === 'Begin run', 'unticking hardcore restores the plain button');
+    await page.click('#hero-start');
+    check(await isHidden(page, '#hc-badge'), 'a normal run has no badge');
+    check((await hpText(page)) === '40/40', 'and full HP');
+    check(await page.evaluate(() => localStorage.getItem('wordsmith-hardcore')) === '0', 'the choice is remembered as off');
+    const [normalCard] = await openCards(page);
+    check((await normalCard.$('.hc-note')) === null, 'clues carry no hardcore note');
+    const nIndex = await normalCard.getAttribute('data-index');
+    for (let i = 0; i < 4; i += 1) {
+      await page.$eval(`.clue-item[data-index="${nIndex}"] input`, (x, v) => { x.value = v; }, `NO${i}`);
+      await page.$eval(`.clue-item[data-index="${nIndex}"] form`, (f) => f.requestSubmit());
+    }
+    check((await hpText(page)) === '40/40', 'wrong answers are still free');
+    check(await reachBattle(page), 'reached a normal battle');
+    check(await isHidden(page, '#turn-timer'), 'with no clock');
+    await page.waitForTimeout(1500);
+    check(await page.$eval('#overlay', (o) => o.hidden) && !(await page.$eval('#battle-view', (b) => b.hidden)), 'and nothing times out');
+    check(errors.length === 0, `no script errors (${errors.join('; ')})`);
+    await context.close();
+  }
+
+  // ---------------- a hardcore win ----------------
+  {
+    const { context, page, errors } = await open(profile, { hero: 'warden', seed: HC_PREF });
+    let outcome = null;
+    let attempts = 0;
+    for (; attempts < 4; attempts += 1) {
+      outcome = (await playUntilOver(page)).outcome;
+      if (outcome === 'won') break;
+      await page.evaluate(() => document.getElementById('overlay').click()); // "You have fallen!" -> picker
+      check(await page.$eval('#hardcore-toggle', (c) => c.checked), 'after a fall the picker remembers hardcore');
+      await page.click('#hero-start');
+    }
+    check(outcome === 'won', `a hardcore run can be won (attempt ${attempts + 1})`);
+    const winText = await page.$eval('#overlay-text', (t) => t.textContent);
+    const hudScore = Number(await page.$eval('#score-text', (e) => e.textContent));
+    const expected = Math.round(hudScore * HARDCORE.scoreMultiplier);
+    check(winText.includes(`Hardcore! Score ${hudScore} ×${HARDCORE.scoreMultiplier} = ${expected}`), `the win shows the multiplier (${winText.slice(0, 60)}...)`);
+    await page.evaluate(() => document.getElementById('overlay').click());
+    const stats = await page.evaluate(() => JSON.parse(localStorage.getItem('wordsmith-hardcore-stats')));
+    check(stats.wins === 1 && stats.best === expected, `the win is recorded (best ${stats.best})`);
+    check(stats.falls === attempts, `along with the ${attempts} earlier fall(s)`);
+    check((await page.$eval('#hero-title', (t) => t.textContent)) === 'Play again?', 'and a new run is offered');
+    check(errors.length === 0, `no script errors (${errors.join('; ')})`);
+
+    // The Daily Challenge ignores a remembered hardcore choice.
+    await page.click('#tab-daily');
+    await page.click('#hero-start');
+    check(await isHidden(page, '#hc-badge'), 'the Daily Challenge is never hardcore');
+    check(await page.evaluate(() => localStorage.getItem('wordsmith-hardcore')) === '1', 'and does not change the remembered choice');
+    await page.click('#help-btn');
+    check(!/Hardcore mode \(on\)/.test(await page.$eval('#help-body', (e) => e.innerText)), 'the daily rules card is the normal one');
+    await context.close();
+  }
+}
+
 for (const profile of profiles) {
   console.log(`\n== ${profile.name}`);
 
@@ -483,7 +710,9 @@ for (const profile of profiles) {
     await page.keyboard.press('ArrowRight');
     check(await page.$eval('input[value="warden"]', (e) => e.checked), 'arrow keys move between heroes');
     await page.keyboard.press('Tab');
-    check(await page.evaluate(() => document.activeElement.id === 'hero-start'), 'Tab goes on to Begin run');
+    check(await page.evaluate(() => document.activeElement.id === 'hardcore-toggle'), 'Tab goes on to the hardcore option');
+    await page.keyboard.press('Tab');
+    check(await page.evaluate(() => document.activeElement.id === 'hero-start'), 'then Begin run');
     await page.keyboard.press('Tab');
     check(await page.evaluate(() => document.activeElement.id === 'tab-free'), 'and wraps to the first control instead of leaving the dialog');
 
@@ -664,6 +893,7 @@ for (const profile of profiles) {
   }
 
   await dailyChecks(profile);
+  await hardcoreChecks(profile);
 }
 
 await browser.close();
