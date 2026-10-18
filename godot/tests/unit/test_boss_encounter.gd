@@ -65,9 +65,15 @@ func _test_when_it_appears() -> void:
 
 func _test_stats_and_phases() -> void:
 	var fight := _fight(5, 7)
-	assert_eq(int(fight.boss.max_hp), 200 + 10 * 5 + 2 * 7, "boss HP scales with depth and grid size")
+	# Expected from the boss's own data (enemies_master.json), so retuning the boss
+	# does not break this test; tests/unit/test_boss_balance.gd checks the tuning.
+	var data := EnemyDatabase.get_enemy("boss_thesaurus")
+	var grid_hp: int = int(ConfigLoader.load_json(Constants.GAME_CONFIG_PATH).difficulty_scaling.hp_per_grid_size)
+	var expected_hp: int = int(data.base_hp) + int(data.scaling.hp_per_depth) * 5 + grid_hp * 7
+	var expected_damage: int = int(data.base_damage) + int(data.scaling.damage_per_depth) * 5
+	assert_eq(int(fight.boss.max_hp), expected_hp, "boss HP scales with depth and grid size, per its data")
 	assert_eq(int(fight.boss.current_hp), int(fight.boss.max_hp), "it starts at full health")
-	assert_eq(int(fight.boss.damage), 35, "and hits for 20 + 3 per depth")
+	assert_eq(int(fight.boss.damage), expected_damage, "and hits for its base damage plus its per-depth scaling")
 	assert_false(fight.is_over(), "a new fight is not over")
 
 	var expected := [[1.0, 0], [0.9, 0], [0.51, 0], [0.5, 1], [0.26, 1], [0.25, 2], [0.1, 2], [0.0, 2]]
@@ -193,7 +199,10 @@ func _test_a_hopeless_fight() -> void:
 		rounds += 1
 	assert_true(fight.player_died, "a player who only misses dies")
 	assert_false(fight.is_won(), "and the boss survives")
-	assert_eq(rounds, 1, "within the first round (three misses at 35 each)")
+	# Each round allows three attempts, so the strikes that kill a 100 HP player
+	# (the boss's damage, again and again) take this many rounds to land.
+	var strikes: int = ceili(100.0 / float(fight.boss.damage))
+	assert_eq(rounds, ceili(strikes / 3.0), "after as many rounds as it takes %d strikes of %d to add up to 100 HP" % [strikes, int(fight.boss.damage)])
 	assert_eq(int(fight.boss.current_hp), int(fight.boss.max_hp), "having never scratched it")
 
 func _test_modern_spelling_is_worth_less() -> void:

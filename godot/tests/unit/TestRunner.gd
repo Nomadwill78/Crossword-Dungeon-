@@ -24,7 +24,15 @@ func _ready() -> void:
 	if grid_suite._tests_failed > 0:
 		failed_suites.append("GridGenerator")
 
-	for suite in _suites():
+	var suites := _suites()
+	# If any suite's script fails to compile, building this list aborts and
+	# comes back EMPTY, which would otherwise look like "all suites passed".
+	if suites.is_empty():
+		push_error("TestRunner: no test suites could be built (a suite script has a compile error; see the errors above)")
+		get_tree().quit(1)
+		return
+
+	for suite in suites:
 		print("\n=== %s ===" % suite.suite_name)
 		suite.run(self)
 		await suite.run_async(self)
@@ -67,6 +75,7 @@ func _suites() -> Array[TestSuite]:
 		TestEnemyData.new(),
 		TestEnemyAbilities.new(),
 		TestBossEncounter.new(),
+		TestBossBalance.new(),
 		TestLexiconScenes.new(),
 		TestPerformance.new(),
 	]
