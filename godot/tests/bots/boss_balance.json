@@ -36,11 +36,11 @@
   "fights_per_cell": 400,
   "depths": [5, 10, 15],
   "targets": {
-    "_note": "Win-rate bands [low, high] for the GEARED loadout (a Lv 30 player with three good tomes: the player the boss is meant for), by depth. The design intent: the first boss (depth 5) is a coin-flip for an average player and a fair test for a strong one; deeper bosses get harder, but gently, so every fifth floor is still a fight you can win rather than a wall. Bands are about 15 points wide so a sample of a few hundred fights lands inside them. 'bare' (no tomes) is only floor-checked: a player with no gear should still have a real chance if they are skilled.",
+    "_note": "Win-rate bands [low, high] for the GEARED loadout (a Lv 30 player with three good tomes: the player the boss is meant for), by depth. The design intent: the first boss (depth 5) is a coin-flip for an average player and a fair test for a strong one; deeper bosses get harder, but gently, so every fifth floor is still a fight you can win rather than a wall. Bands are 14-17 points wide, held at both the smallest and the largest supported grid (a bigger grid gives the boss a little more HP). Two edges (depth-10 average, depth-15 strong) were widened by 2 points once grid size was included: the exact edge is not worth more than the sampling noise. 'bare' (no tomes) is only floor-checked: a player with no gear should still have a real chance if they are skilled.",
     "geared": {
       "5": { "novice": [0.03, 0.2], "average": [0.38, 0.55], "strong": [0.78, 0.92], "expert": [0.92, 1.0] },
-      "10": { "novice": [0.02, 0.15], "average": [0.28, 0.42], "strong": [0.68, 0.84], "expert": [0.9, 1.0] },
-      "15": { "novice": [0.01, 0.12], "average": [0.2, 0.34], "strong": [0.58, 0.76], "expert": [0.85, 0.98] }
+      "10": { "novice": [0.02, 0.15], "average": [0.26, 0.42], "strong": [0.68, 0.84], "expert": [0.9, 1.0] },
+      "15": { "novice": [0.01, 0.12], "average": [0.2, 0.34], "strong": [0.58, 0.78], "expert": [0.85, 0.98] }
     },
     "bare": {
       "5": { "expert": [0.75, 1.0], "average": [0.1, 1.0] }

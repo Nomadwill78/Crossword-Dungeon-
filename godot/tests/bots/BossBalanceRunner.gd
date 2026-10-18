@@ -1,8 +1,9 @@
 ## Prints how often each kind of simulated player beats The Thesaurus.
 ## Run with: godot --headless --path . tests/bots/BossBalanceRunner.tscn
 ## Optional, after `--`: `--fights=1000` for more fights per cell (default from
-## boss_balance.json); `--sensitivity` for how the geared win rates move when
-## each assumption about how people play is changed. Always exits 0: this is a
+## boss_balance.json); `--grid=9` for a larger dungeon (5, 7 or 9; the boss has a
+## little more HP on bigger grids); `--sensitivity` for how the geared win rates
+## move when each assumption about how people play is changed. Always exits 0: this is a
 ## report, the pass/fail checks live in tests/unit/test_boss_balance.gd.
 extends Node
 
@@ -12,14 +13,17 @@ func _ready() -> void:
 	var cfg := BossBalance.config()
 	var fights := int(cfg.get("fights_per_cell", 400))
 	var sensitivity := false
+	var grid_size := BossBalance.DEFAULT_GRID_SIZE
 	for arg in OS.get_cmdline_user_args():
 		if String(arg).begins_with("--fights="):
 			fights = maxi(1, int(String(arg).trim_prefix("--fights=")))
+		elif String(arg).begins_with("--grid="):
+			grid_size = int(String(arg).trim_prefix("--grid="))
 		elif String(arg) == "--sensitivity":
 			sensitivity = true
 
-	var boss: Dictionary = EnemyDatabase.build_encounter(String(EnemyDatabase.get_boss_ids()[0]), 5, 5)
-	print("The Thesaurus at depth 5: %d HP, %d damage per miss (before the player's damage reduction)" % [int(boss.max_hp), int(boss.damage)])
+	var boss: Dictionary = EnemyDatabase.build_encounter(String(EnemyDatabase.get_boss_ids()[0]), 5, grid_size)
+	print("The Thesaurus at depth 5 on a %dx%d grid: %d HP, %d damage per miss (before the player's damage reduction)" % [grid_size, grid_size, int(boss.max_hp), int(boss.damage)])
 	print("%d fights per cell, seed %d. Win rate / avg rounds / avg misses (of which timeouts) / HP left\n" % [fights, SEED_BASE])
 
 	if sensitivity:
@@ -37,7 +41,7 @@ func _ready() -> void:
 		for depth in cfg.get("depths", [5]):
 			print("  depth %d" % int(depth))
 			for archetype_name in archetypes.keys():
-				var r := BossBalance.run_cell(archetypes[archetype_name], String(loadout_name), int(depth), fights, SEED_BASE)
+				var r := BossBalance.run_cell(archetypes[archetype_name], String(loadout_name), int(depth), fights, SEED_BASE, {"grid_size": grid_size})
 				print("    %-8s %3d%% win | %4.1f rounds | %4.1f misses (%3.1f timeouts) | %3d%% HP left | reach p2 %3d%% p3 %3d%%" % [
 					archetype_name, int(round(float(r.win_rate) * 100.0)), float(r.avg_rounds),
 					float(r.avg_misses), float(r.avg_timeouts), int(round(float(r.avg_hp_fraction_left) * 100.0)),
@@ -62,6 +66,8 @@ func _print_sensitivity(cfg: Dictionary, fights: int) -> void:
 		["no typos", {"model": {"typo_chance": 0.0}}],
 		["everyone 30% slower", {"speed_scale": 1.3}],
 		["everyone 30% faster", {"speed_scale": 0.7}],
+		["7x7 grid (boss +4 HP)", {"grid_size": 7}],
+		["9x9 grid (boss +8 HP)", {"grid_size": 9}],
 	]
 	var archetypes: Dictionary = cfg.get("archetypes", {})
 	print("Geared win rates, %d fights each. Columns: depth 5 / 10 / 15.\n" % fights)

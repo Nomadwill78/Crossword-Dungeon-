@@ -31,6 +31,7 @@ func run(_host: Node) -> void:
 	_test_fights_are_reproducible()
 	_test_boss_scaling_data()
 	_test_win_rates_are_inside_the_targets()
+	_test_a_bigger_grid_is_never_easier()
 	_test_skill_and_depth_ordering()
 	_test_the_tuning_survives_other_assumptions()
 
@@ -191,18 +192,32 @@ func _test_boss_scaling_data() -> void:
 #----------------------------------------------------------------------------
 func _test_win_rates_are_inside_the_targets() -> void:
 	var targets: Dictionary = BossBalance.config().targets
-	for depth_key in targets.geared:
-		for archetype in targets.geared[depth_key]:
-			var band: Array = targets.geared[depth_key][archetype]
-			var rate := _win_rate(archetype, "geared", int(depth_key))
-			assert_true(rate >= float(band[0]) and rate <= float(band[1]),
-				"geared %s at depth %s wins %.0f%% (target %.0f-%.0f%%)" % [archetype, depth_key, rate * 100.0, float(band[0]) * 100.0, float(band[1]) * 100.0])
+	# A bigger grid gives the boss a little more HP, and the live fight passes the
+	# player's chosen grid size, so the bands must hold at the smallest AND the
+	# largest supported size (the sizes in between fall between the two).
+	var sizes: Array = ConfigLoader.load_json(Constants.GAME_CONFIG_PATH).grid.supported_sizes
+	for grid_size in [int(sizes.min()), int(sizes.max())]:
+		for depth_key in targets.geared:
+			for archetype in targets.geared[depth_key]:
+				var band: Array = targets.geared[depth_key][archetype]
+				var rate := _win_rate(archetype, "geared", int(depth_key), {"grid_size": grid_size})
+				assert_true(rate >= float(band[0]) and rate <= float(band[1]),
+					"geared %s at depth %s on a %dx%d grid wins %.0f%% (target %.0f-%.0f%%)" % [archetype, depth_key, grid_size, grid_size, rate * 100.0, float(band[0]) * 100.0, float(band[1]) * 100.0])
 	for depth_key in targets.bare:
 		for archetype in targets.bare[depth_key]:
 			var band: Array = targets.bare[depth_key][archetype]
 			var rate := _win_rate(archetype, "bare", int(depth_key))
 			assert_true(rate >= float(band[0]) and rate <= float(band[1]),
 				"bare %s at depth %s wins %.0f%% (target %.0f-%.0f%%)" % [archetype, depth_key, rate * 100.0, float(band[0]) * 100.0, float(band[1]) * 100.0])
+
+func _test_a_bigger_grid_is_never_easier() -> void:
+	var small := BossBalance.run_cell(_archetype("average"), "geared", 10, 600, SEED_BASE, {"grid_size": 5})
+	var large := BossBalance.run_cell(_archetype("average"), "geared", 10, 600, SEED_BASE, {"grid_size": 9})
+	assert_true(float(large.win_rate) <= float(small.win_rate) + 0.03, "a 9x9 boss (+8 HP) is not easier than a 5x5 one (%.0f%% vs %.0f%%)" % [float(large.win_rate) * 100.0, float(small.win_rate) * 100.0])
+	var boss_id := String(EnemyDatabase.get_boss_ids()[0])
+	var hp_5 := int(EnemyDatabase.build_encounter(boss_id, 10, 5).max_hp)
+	var hp_9 := int(EnemyDatabase.build_encounter(boss_id, 10, 9).max_hp)
+	assert_gt(float(hp_9), float(hp_5), "the simulation's grid size really reaches the boss: more HP on a larger grid")
 
 func _test_skill_and_depth_ordering() -> void:
 	for depth in [5, 10, 15]:

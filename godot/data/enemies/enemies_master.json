@@ -175,7 +175,7 @@
       "enemy_type": "thesaurus",
       "tier": 5,
       "is_boss": true,
-      "base_hp": 205,
+      "base_hp": 201,
       "base_damage": 30,
       "no_counter_on_hit": true,
       "attack_pattern": "synonym_shift",

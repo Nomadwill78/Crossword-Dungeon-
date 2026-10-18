@@ -21,7 +21,7 @@ Open `godot/` as a project in Godot 4.3+, or headless:
 ```
 godot --headless --path godot/ tests/unit/TestRunner.tscn   # unit tests + perf benchmarks
 godot --headless --path godot/ tests/bots/BotRunner.tscn    # 100-run soft-lock/crash bot
-godot --headless --path godot/ tests/bots/BossBalanceRunner.tscn   # boss win rates by player skill (add -- --sensitivity)
+godot --headless --path godot/ tests/bots/BossBalanceRunner.tscn   # boss win rates by player skill (add -- --sensitivity, --grid=9)
 godot --path godot/                                          # play it (main menu -> The Lexicon / Quick Delve)
 ```
 
@@ -192,12 +192,13 @@ Everything below is a conscious gap, not an oversight:
   `tests/bots/BossBalance.gd` plays the real fight with a model of a human
   (answer speed against the real clock, recall, typos, the harder opposite-of
   phase) and `tests/unit/test_boss_balance.gd` holds the boss to win-rate bands
-  per skill level: for a geared Lv 30 player the first boss is a coin-flip for an
-  average player (41%) and a fair test for a strong one (85%), and deeper bosses
-  are harder but gently (depth 15: 23% / 72%). The playtest bot still wins
+  per skill level, at the smallest and the largest grid: for a geared Lv 30 player
+  the first boss is close to a coin-flip for an average player (40-44%) and a fair
+  test for a strong one (85%), and deeper bosses are harder but gently (depth 15:
+  22-24% / 72-73%). The playtest bot still wins
   90-100% because it is untimed and near-perfect, which is why it is not the
   yardstick. The model's assumptions are guesses (answer speed above all: 30%
-  slower answers cut the average player's win rate from 41% to 10%), so replace
+  slower answers cut the average player's win rate from 44% to 11%), so replace
   them with real playtest figures in `tests/bots/boss_balance.json` as soon as
   they exist; the boss's four numbers are in `enemies_master.json`. See ADR-005.
 - **The Thesaurus's synonym rule is only half there.** Phase 1 rewords the clue

@@ -26,6 +26,8 @@ class_name BossBalance
 extends RefCounted
 
 const CONFIG_PATH := "res://tests/bots/boss_balance.json"
+## The grid size a simulated fight uses unless told otherwise (the smallest).
+const DEFAULT_GRID_SIZE := 5
 ## A wrong answer to type when the simulated player does not know the clue.
 const WRONG_ANSWER := "QQQQQQQQQQ"
 
@@ -69,16 +71,17 @@ static func make_player(loadout_name: String, arrival_hp: float = -1.0) -> Dicti
 ##   phase_reached, rounds_by_phase }.
 ## [param profile] is { recall, speed } (an archetype); [param rng] drives every
 ## choice the simulated player makes. [param options] can hold `model`
-## (overrides laid over boss_balance.json's model, see merged_model) and
-## `arrival_hp` (0..1): tests and the sensitivity report use them to vary the
-## assumptions.
+## (overrides laid over boss_balance.json's model, see merged_model),
+## `arrival_hp` (0..1) and `grid_size` (default 5; a larger grid gives the boss a
+## little more HP, as in a real run): tests and the sensitivity report use them
+## to vary the assumptions.
 static func fight(
 	profile: Dictionary, loadout_name: String, depth: int, rng: RandomNumberGenerator,
 	options: Dictionary = {}
 ) -> Dictionary:
 	var model := merged_model(options.get("model", {}))
 	var player := make_player(loadout_name, float(options.get("arrival_hp", -1.0)))
-	var encounter := BossEncounter.begin(depth, 5)
+	var encounter := BossEncounter.begin(depth, int(options.get("grid_size", DEFAULT_GRID_SIZE)))
 	var guard := int(model.get("max_rounds_guard", 120))
 	var misses := 0
 	var timeouts := 0
