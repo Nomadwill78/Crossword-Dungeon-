@@ -62,7 +62,8 @@ A fight is a series of single-clue **rounds** against one shared HP pool. Each
 round is an ordinary `CombatStateMachine` with `round_mode = true` (a correct
 answer ends the round with the boss still standing), so timers, attempts, damage
 and the player's Lexicon bonuses are the same code as any duel. Boss HP and damage
-come from the data (200 + 10/depth + 2/grid size; 20 + 3/depth). The boss has
+come from the data (as first built: 200 + 10/depth + 2/grid size and 20 + 3/depth;
+retuned in [ADR-005](005-tuning-the-thesaurus.md), see `enemies_master.json`). The boss has
 `no_counter_on_hit`: it strikes only on a miss or timeout. Without that, the
 counter-attack every non-lethal hit draws would make a 260 HP boss unbeatable.
 
@@ -96,8 +97,9 @@ Negative:
   one-line descriptions.
 - Only 7 opposite pairs and 8 archaic spellings exist, so a long boss career will
   see repeats (a fight never repeats within itself until a pool is exhausted).
-- The boss is untuned: the playtest bot, which is far better at typing than a
-  person, wins ~90% of fights.
+- The boss was untuned when this was written: the playtest bot, which is far
+  better at typing than a person, wins ~90% of fights. It has since been tuned
+  against a simulated person: see [ADR-005](005-tuning-the-thesaurus.md).
 
 ## Alternatives Considered
 

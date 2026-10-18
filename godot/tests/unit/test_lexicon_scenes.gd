@@ -506,8 +506,18 @@ func _test_boss_kills_the_player(host: Node) -> void:
 	scene._on_floor_primary_pressed()
 	assert_true(scene._boss != null, "setup: the fight began")
 
-	_answer_boss_round(scene, false)
-	assert_eq(String(GameState.current_run.run_status), "failed", "three misses at the boss's damage kill a 100 HP player")
+	# Misses add up round after round (three attempts a round) until the boss's
+	# damage has used up the player's HP; how many rounds that takes depends on
+	# how hard the boss hits (enemies_master.json), so work it out.
+	var boss_damage: int = int(scene._boss.boss.damage)
+	var player_hp: int = int(GameState.current_run.player_state.current_hp)
+	var strikes: int = ceili(float(player_hp) / float(boss_damage))
+	var misses_rounds := 0
+	while String(GameState.current_run.run_status) == "in_progress" and misses_rounds < 20:
+		_answer_boss_round(scene, false)
+		misses_rounds += 1
+	assert_eq(String(GameState.current_run.run_status), "failed", "strikes of %d add up to the player's %d HP and kill them" % [boss_damage, player_hp])
+	assert_eq(misses_rounds, ceili(strikes / 3.0), "after as many rounds as %d strikes take at three attempts a round" % strikes)
 	assert_true(scene._boss == null or scene._boss.player_died, "the fight records the death")
 	assert_false(bool(GameState.current_run.boss_defeated), "and the boss is not defeated")
 	assert_eq(int(GameState.statistics.total_deaths), 1, "the death is counted")

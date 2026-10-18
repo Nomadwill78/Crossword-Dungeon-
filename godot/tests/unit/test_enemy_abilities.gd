@@ -280,8 +280,12 @@ func _test_weaknesses() -> void:
 
 func _test_round_mode() -> void:
 	var boss := EnemyDatabase.build_encounter("boss_thesaurus", 5, 5)
-	assert_eq(int(boss.max_hp), 200 + 10 * 5 + 2 * 5, "the boss scales: 200 + 10 per depth + 2 per grid size")
-	assert_eq(int(boss.damage), 20 + 3 * 5, "and hits for 20 + 3 per depth")
+	var data := EnemyDatabase.get_enemy("boss_thesaurus")
+	var grid_hp: int = int(ConfigLoader.load_json(Constants.GAME_CONFIG_PATH).difficulty_scaling.hp_per_grid_size)
+	var expected_hp: int = int(data.base_hp) + int(data.scaling.hp_per_depth) * 5 + grid_hp * 5
+	var expected_damage: int = int(data.base_damage) + int(data.scaling.damage_per_depth) * 5
+	assert_eq(int(boss.max_hp), expected_hp, "the boss scales with depth and grid size, per its own data")
+	assert_eq(int(boss.damage), expected_damage, "and hits for its base damage plus its per-depth scaling")
 
 	var orc := ClueDatabase.get_clue(ORC)
 	var defeated_events: Array = []
