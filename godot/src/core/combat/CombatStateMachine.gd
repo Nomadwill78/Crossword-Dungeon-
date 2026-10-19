@@ -421,13 +421,16 @@ func _fire_ability(mode: String, message: String, uses_cooldown: bool = true) ->
 	ability_triggered.emit(info)
 
 ## The player's timer modifiers plus any vocabulary-node bonus for this
-## clue's category (player_state.category_timer_bonus, set by LexiconEffects).
+## clue's category (player_state.category_timer_bonus, set by LexiconEffects)
+## plus the enemy's own `round_timer_bonus` (a boss gives its rounds extra
+## seconds because they ask more than a plain clue does).
 func _timer_modifiers() -> Dictionary:
 	var modifiers: Dictionary = (_player_state.get("timer_modifiers", {}) as Dictionary).duplicate()
 	var by_category: Dictionary = _player_state.get("category_timer_bonus", {})
-	var category_bonus := float(by_category.get(String(_clue.get("category", "")), 0.0))
-	if category_bonus != 0.0:
-		modifiers["timer_bonus"] = float(modifiers.get("timer_bonus", 0.0)) + category_bonus
+	var extra := float(by_category.get(String(_clue.get("category", "")), 0.0))
+	extra += float(_enemy.get("round_timer_bonus", 0.0))
+	if extra != 0.0:
+		modifiers["timer_bonus"] = float(modifiers.get("timer_bonus", 0.0)) + extra
 	return modifiers
 
 func _on_timer_expired() -> void:

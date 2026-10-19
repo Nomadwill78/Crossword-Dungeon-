@@ -74,7 +74,8 @@ static func make_player(loadout_name: String, arrival_hp: float = -1.0) -> Dicti
 ## (overrides laid over boss_balance.json's model, see merged_model),
 ## `arrival_hp` (0..1) and `grid_size` (default 5; a larger grid gives the boss a
 ## little more HP, as in a real run): tests and the sensitivity report use them
-## to vary the assumptions.
+## to vary the assumptions. `round_timer_bonus` (seconds) and `hp_offset` (HP
+## added to the boss) try a boss tuning without editing its data.
 static func fight(
 	profile: Dictionary, loadout_name: String, depth: int, rng: RandomNumberGenerator,
 	options: Dictionary = {}
@@ -82,6 +83,7 @@ static func fight(
 	var model := merged_model(options.get("model", {}))
 	var player := make_player(loadout_name, float(options.get("arrival_hp", -1.0)))
 	var encounter := BossEncounter.begin(depth, int(options.get("grid_size", DEFAULT_GRID_SIZE)))
+	_apply_boss_what_if(encounter.boss, options)
 	var guard := int(model.get("max_rounds_guard", 120))
 	var misses := 0
 	var timeouts := 0
@@ -198,7 +200,11 @@ static func _play_round(
 	while not machine.is_finished() and guard < 12:
 		guard += 1
 		var clock := timer.max_time
-		var seconds := response_seconds(clock, float(profile.get("speed", 0.5)), phase, model, rng)
+		# People answer in real seconds, so their pace is a share of the clue's
+		# STANDARD clock; extra seconds from a bonus are slack, not a reason to
+		# think more slowly.
+		var standard := TimerSystem.base_seconds_for_difficulty(int(clue.get("difficulty", 1)))
+		var seconds := response_seconds(standard, float(profile.get("speed", 0.5)), phase, model, rng)
 		if seconds >= clock:
 			timeouts += 1
 			misses += 1
@@ -218,6 +224,15 @@ static func _play_round(
 		encounter.abandoned = true
 	timer.free()
 	return {"misses": misses, "timeouts": timeouts}
+
+## Applies the what-if boss changes in [param options] to a freshly built boss.
+static func _apply_boss_what_if(boss: Dictionary, options: Dictionary) -> void:
+	if options.has("round_timer_bonus"):
+		boss["round_timer_bonus"] = float(options.round_timer_bonus)
+	var offset := int(options.get("hp_offset", 0))
+	if offset != 0:
+		boss["max_hp"] = int(boss.max_hp) + offset
+		boss["current_hp"] = int(boss.current_hp) + offset
 
 ## What the simulated player types for [param clue] on [param attempt].
 static func _answer_for(
