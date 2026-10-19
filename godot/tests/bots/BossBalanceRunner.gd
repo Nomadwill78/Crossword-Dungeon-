@@ -2,7 +2,9 @@
 ## Run with: godot --headless --path . tests/bots/BossBalanceRunner.tscn
 ## Optional, after `--`: `--fights=1000` for more fights per cell (default from
 ## boss_balance.json); `--grid=9` for a larger dungeon (5, 7 or 9; the boss has a
-## little more HP on bigger grids); `--sensitivity` for how the geared win rates
+## little more HP on bigger grids); `--bonus=10` and `--hp-offset=20` to try a boss
+## clock bonus (seconds per round) or extra boss HP without editing its data;
+## `--sensitivity` for how the geared win rates
 ## move when each assumption about how people play is changed. Always exits 0: this is a
 ## report, the pass/fail checks live in tests/unit/test_boss_balance.gd.
 extends Node
@@ -14,11 +16,16 @@ func _ready() -> void:
 	var fights := int(cfg.get("fights_per_cell", 400))
 	var sensitivity := false
 	var grid_size := BossBalance.DEFAULT_GRID_SIZE
+	var what_if := {}
 	for arg in OS.get_cmdline_user_args():
 		if String(arg).begins_with("--fights="):
 			fights = maxi(1, int(String(arg).trim_prefix("--fights=")))
 		elif String(arg).begins_with("--grid="):
 			grid_size = int(String(arg).trim_prefix("--grid="))
+		elif String(arg).begins_with("--bonus="):
+			what_if["round_timer_bonus"] = float(String(arg).trim_prefix("--bonus="))
+		elif String(arg).begins_with("--hp-offset="):
+			what_if["hp_offset"] = int(String(arg).trim_prefix("--hp-offset="))
 		elif String(arg) == "--sensitivity":
 			sensitivity = true
 
@@ -27,7 +34,7 @@ func _ready() -> void:
 	print("%d fights per cell, seed %d. Win rate / avg rounds / avg misses (of which timeouts) / HP left\n" % [fights, SEED_BASE])
 
 	if sensitivity:
-		_print_sensitivity(cfg, fights)
+		_print_sensitivity(cfg, fights, what_if)
 		get_tree().quit(0)
 		return
 
@@ -41,7 +48,7 @@ func _ready() -> void:
 		for depth in cfg.get("depths", [5]):
 			print("  depth %d" % int(depth))
 			for archetype_name in archetypes.keys():
-				var r := BossBalance.run_cell(archetypes[archetype_name], String(loadout_name), int(depth), fights, SEED_BASE, {"grid_size": grid_size})
+				var r := BossBalance.run_cell(archetypes[archetype_name], String(loadout_name), int(depth), fights, SEED_BASE, _options(grid_size, what_if))
 				print("    %-8s %3d%% win | %4.1f rounds | %4.1f misses (%3.1f timeouts) | %3d%% HP left | reach p2 %3d%% p3 %3d%%" % [
 					archetype_name, int(round(float(r.win_rate) * 100.0)), float(r.avg_rounds),
 					float(r.avg_misses), float(r.avg_timeouts), int(round(float(r.avg_hp_fraction_left) * 100.0)),
@@ -53,7 +60,7 @@ func _ready() -> void:
 ## How the geared win rates (average / strong players, by depth) move when one
 ## assumption at a time is changed. A tuning that only works for one exact set
 ## of guesses is not a tuning; this shows how much the answer depends on them.
-func _print_sensitivity(cfg: Dictionary, fights: int) -> void:
+func _print_sensitivity(cfg: Dictionary, fights: int, what_if: Dictionary) -> void:
 	var variants: Array = [
 		["as configured", {}],
 		["arrive at full HP", {"arrival_hp": 1.0}],
@@ -74,6 +81,7 @@ func _print_sensitivity(cfg: Dictionary, fights: int) -> void:
 	print("%-36s %-17s %-17s" % ["assumption changed", "average", "strong"])
 	for variant in variants:
 		var options: Dictionary = (variant[1] as Dictionary).duplicate(true)
+		options.merge(what_if)
 		var cells := {}
 		for archetype_name in ["average", "strong"]:
 			var profile: Dictionary = (archetypes[archetype_name] as Dictionary).duplicate()
@@ -84,3 +92,8 @@ func _print_sensitivity(cfg: Dictionary, fights: int) -> void:
 				rates.append("%3d" % int(round(float(r.win_rate) * 100.0)))
 			cells[archetype_name] = " / ".join(rates)
 		print("%-36s %-17s %-17s" % [variant[0], cells.average, cells.strong])
+
+func _options(grid_size: int, what_if: Dictionary) -> Dictionary:
+	var options := {"grid_size": grid_size}
+	options.merge(what_if)
+	return options
