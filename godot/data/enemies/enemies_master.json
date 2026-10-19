@@ -175,7 +175,8 @@
       "enemy_type": "thesaurus",
       "tier": 5,
       "is_boss": true,
-      "base_hp": 201,
+      "base_hp": 256,
+      "round_timer_bonus": 10,
       "base_damage": 30,
       "no_counter_on_hit": true,
       "attack_pattern": "synonym_shift",
@@ -192,7 +193,7 @@
       "resistance": null,
       "visual": { "portrait_key": "boss_thesaurus", "color_theme": "#B08D57" },
       "audio": { "spawn_key": "sfx_thesaurus_spawn", "attack_key": "sfx_thesaurus_attack", "defeat_key": "sfx_thesaurus_defeat" },
-      "scaling": { "hp_per_depth": 8, "damage_per_depth": 0 },
+      "scaling": { "hp_per_depth": 11, "damage_per_depth": 0 },
       "flavor_text": "It has a word for what you are about to become. Several, in fact."
     }
   ]
