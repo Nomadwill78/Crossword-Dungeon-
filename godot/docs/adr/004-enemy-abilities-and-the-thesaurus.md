@@ -63,7 +63,7 @@ round is an ordinary `CombatStateMachine` with `round_mode = true` (a correct
 answer ends the round with the boss still standing), so timers, attempts, damage
 and the player's Lexicon bonuses are the same code as any duel. Boss HP and damage
 come from the data (as first built: 200 + 10/depth + 2/grid size and 20 + 3/depth;
-retuned in [ADR-005](005-tuning-the-thesaurus.md), see `enemies_master.json`). The boss has
+retuned in [ADR-005](005-tuning-the-thesaurus.md) and [ADR-006](006-a-clock-bonus-for-boss-rounds.md), see `enemies_master.json`). The boss has
 `no_counter_on_hit`: it strikes only on a miss or timeout. Without that, the
 counter-attack every non-lethal hit draws would make a 260 HP boss unbeatable.
 

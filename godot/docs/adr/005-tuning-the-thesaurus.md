@@ -1,7 +1,9 @@
 # ADR-005: Tuning The Thesaurus against a simulated person
 
 ## Status
-Accepted. The tuning is only as good as the model of a player behind it, and
+Accepted; the boss's numbers here were superseded by
+[ADR-006](006-a-clock-bonus-for-boss-rounds.md), which adds a clock bonus. The
+method, targets and retune procedure below still stand. The tuning is only as good as the model of a player behind it, and
 that model is assumptions, not playtest data. Everything needed to redo it with
 real data is a JSON edit (see "Retuning").
 
@@ -174,6 +176,7 @@ Negative:
   16-19%, below the band) wherever the HP is set.
 - **Strikes as a share of max HP.** Rejected: a new combat rule, and CLAUDE.md 9.5
   keeps the damage formula off limits without approval.
-- **A boss-specific clock bonus.** Not done, but the obvious next lever: answer
-  speed is the biggest unknown, and a few extra seconds on boss rounds would raise
-  win rates a lot without touching HP or damage.
+- **A boss-specific clock bonus.** Not done here, but the obvious next lever: answer
+  speed is the biggest unknown. Built afterwards in
+  [ADR-006](006-a-clock-bonus-for-boss-rounds.md); it raises win rates, so HP had to
+  rise with it.
