@@ -45,7 +45,44 @@
     "clue_096_graveyard": "Cemetery of headstones",
     "clue_101_nightmare": "Sleep-time vision that ends in dread",
     "clue_104_gravestone": "Headstone over a burial",
-    "clue_105_drawbridge": "Lifts to block the keep's entrance"
+    "clue_105_drawbridge": "Lifts to block the keep's entrance",
+    "clue_127_lich": "Undead mage whose life is bound to a hidden vessel",
+    "clue_132_hydra": "Beast of Greek myth that Heracles had to slay",
+    "clue_134_mimic": "Chest-shaped ambusher that bites the greedy",
+    "clue_136_harpy": "Winged woman-monster of Greek myth that snatches food",
+    "clue_145_kraken": "Sea monster of Norse legend with enormous arms",
+    "clue_146_gorgon": "Medusa's kind, with serpents for hair",
+    "clue_143_wraith": "Pale spirit that haunts and chills",
+    "clue_148_unicorn": "Mythical horse with one spiral horn",
+    "clue_149_centaur": "Half-man, half-horse of Greek myth",
+    "clue_151_phoenix": "Mythic bird reborn from flame",
+    "clue_157_minotaur": "Half-man, half-bull of the Cretan maze",
+    "clue_154_basilisk": "Lizard-king of legend with a deadly stare",
+    "clue_250_vault": "Strongroom for valuables",
+    "clue_252_altar": "Sacrificial table in a temple",
+    "clue_281_portcullis": "Heavy gate that drops down in a castle entry",
+    "clue_245_moat": "Defensive ditch filled with water",
+    "clue_327_tome": "Large, ancient book of knowledge",
+    "clue_335_sigil": "Magic mark drawn to bind a spirit",
+    "clue_345_amulet": "Protective trinket worn around the neck",
+    "clue_354_levitate": "Hover in the air by magic",
+    "clue_349_warlock": "Magic-user who made a pact with a dark patron",
+    "clue_222_rapier": "Thin dueling blade for lunging",
+    "clue_237_scimitar": "Curved blade of the desert warrior",
+    "clue_225_quiver": "Case slung at the back for arrows",
+    "clue_232_longbow": "Archer's tall bow of English fame",
+    "clue_234_cuirass": "Armor covering chest and back",
+    "clue_212_lance": "Pole weapon charged at a rival in the lists",
+    "clue_309_glacier": "River of slowly moving ice",
+    "clue_308_volcano": "Mountain that erupts with molten rock",
+    "clue_310_thunder": "The booming sound that follows lightning",
+    "clue_314_blizzard": "Fierce snowstorm with whiteout winds",
+    "clue_304_swamp": "Soggy, reed-choked lowland",
+    "clue_185_courage": "Bravery in the face of danger",
+    "clue_191_betrayal": "Treason against a friend",
+    "clue_190_serenity": "Deep, untroubled calm",
+    "clue_200_vengeance": "Revenge for a wrong suffered",
+    "clue_204_melancholy": "A brooding, thoughtful gloom"
   },
   "antonym_pairs": [
     [
@@ -75,6 +112,26 @@
     [
       "clue_057_breeze",
       "clue_071_tempest"
+    ],
+    [
+      "clue_319_sunrise",
+      "clue_323_nightfall"
+    ],
+    [
+      "clue_190_serenity",
+      "clue_189_anxiety"
+    ],
+    [
+      "clue_185_courage",
+      "clue_181_terror"
+    ],
+    [
+      "clue_282_sun",
+      "clue_296_moon"
+    ],
+    [
+      "clue_191_betrayal",
+      "clue_192_devotion"
     ]
   ],
   "archaic_spellings": [
@@ -109,6 +166,34 @@
     {
       "clue_id": "clue_061_sorcery",
       "archaic": "SORCERIE"
+    },
+    {
+      "clue_id": "clue_135_demon",
+      "archaic": "DAEMON"
+    },
+    {
+      "clue_id": "clue_337_magic",
+      "archaic": "MAGICK"
+    },
+    {
+      "clue_id": "clue_064_dungeon",
+      "archaic": "DONJON"
+    },
+    {
+      "clue_id": "clue_065_chamber",
+      "archaic": "CHAMBRE"
+    },
+    {
+      "clue_id": "clue_069_griffin",
+      "archaic": "GRYPHON"
+    },
+    {
+      "clue_id": "clue_068_vampire",
+      "archaic": "VAMPYRE"
+    },
+    {
+      "clue_id": "clue_144_sprite",
+      "archaic": "SPRIGHT"
     }
   ]
 }
