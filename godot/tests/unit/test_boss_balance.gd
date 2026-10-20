@@ -30,10 +30,12 @@ func run(_host: Node) -> void:
 	_test_running_out_of_clock_is_a_miss()
 	_test_fights_are_reproducible()
 	_test_boss_scaling_data()
+	_test_the_boss_gives_its_rounds_extra_clock()
 	_test_win_rates_are_inside_the_targets()
 	_test_a_bigger_grid_is_never_easier()
 	_test_skill_and_depth_ordering()
 	_test_the_tuning_survives_other_assumptions()
+	_test_the_clock_bonus_makes_pace_matter_less()
 
 #----------------------------------------------------------------------------
 # HELPERS
@@ -187,6 +189,13 @@ func _test_boss_scaling_data() -> void:
 		var expected_damage: int = int(boss.base_damage) + int(boss.scaling.damage_per_depth) * depth
 		assert_eq(int(encounter.damage), expected_damage, "depth %d: damage follows the boss's scaling" % depth)
 
+func _test_the_boss_gives_its_rounds_extra_clock() -> void:
+	var boss_id := String(EnemyDatabase.get_boss_ids()[0])
+	var bonus := float(EnemyDatabase.get_enemy(boss_id).get("round_timer_bonus", 0.0))
+	assert_true(bonus > 0.0, "The Thesaurus's rounds get extra seconds (its prompts ask more than a plain clue)")
+	assert_approx(float(EnemyDatabase.build_encounter(boss_id, 5, 5).get("round_timer_bonus", 0.0)), bonus, "and a built encounter carries them into the fight")
+	assert_true(bonus <= 15.0, "but not so many that the clock stops being a pressure (%.0f s)" % bonus)
+
 #----------------------------------------------------------------------------
 # TESTS - the targets
 #----------------------------------------------------------------------------
@@ -255,3 +264,28 @@ func _test_the_tuning_survives_other_assumptions() -> void:
 		assert_true(average < 0.80, "%s: an average player still finds the first boss hard (%.0f%%)" % [label, average * 100.0])
 		assert_true(strong > 0.40, "%s: a strong player still has a real chance at depth 15 (%.0f%%)" % [label, strong * 100.0])
 		assert_true(novice < average, "%s: skill still matters" % label)
+
+## The point of the boss's clock bonus: how fast people really answer is the
+## biggest unknown in this tuning, so a slower or faster crowd should move the
+## win rate less than it would without the bonus, and a slow player must not hit
+## a wall of timeouts.
+func _test_the_clock_bonus_makes_pace_matter_less() -> void:
+	var average := _archetype("average").duplicate()
+	var slow := average.duplicate()
+	slow["speed"] = float(average.speed) * 1.3
+	var fast := average.duplicate()
+	fast["speed"] = float(average.speed) * 0.7
+	var no_bonus := {"round_timer_bonus": 0.0}
+	var rate := func(profile: Dictionary, options: Dictionary) -> float:
+		return float(BossBalance.run_cell(profile, "geared", 5, FIGHTS_PER_CELL, SEED_BASE, options).win_rate)
+	var gap_with: float = rate.call(fast, {}) - rate.call(slow, {})
+	var gap_without: float = rate.call(fast, no_bonus) - rate.call(slow, no_bonus)
+	assert_true(gap_with < gap_without - 0.08,
+		"the bonus narrows the win-rate gap between a fast and a slow crowd (%.0f points with it, %.0f without)" % [gap_with * 100.0, gap_without * 100.0])
+	assert_true(rate.call(slow, {}) > 0.12, "an average player who is 30%% slower than assumed still has a fair chance (%.0f%%)" % [float(rate.call(slow, {})) * 100.0])
+
+	var with_bonus := BossBalance.run_cell(average, "geared", 5, FIGHTS_PER_CELL, SEED_BASE)
+	var without := BossBalance.run_cell(average, "geared", 5, FIGHTS_PER_CELL, SEED_BASE, no_bonus)
+	assert_true(float(with_bonus.avg_timeouts) < float(without.avg_timeouts), "extra seconds mean fewer timeouts (%.2f vs %.2f a fight)" % [float(with_bonus.avg_timeouts), float(without.avg_timeouts)])
+	assert_true(float(with_bonus.win_rate) > float(without.win_rate) + 0.05, "and a better chance of winning for the same player")
+

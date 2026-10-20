@@ -6,6 +6,7 @@
     "asset_keys": "visual/audio carry LOGICAL keys, not file paths, so lookups go through AssetRegistry (CLAUDE.md 2.3). No art or audio exists yet; missing keys degrade to placeholder + warning.",
     "weakness_types": "word_property (computed from the answer, see WordProperties), clue_tag / not_clue_tag (read from the clue's `tags` in clues_master.json), exact_match (the boss: an accepted alternate answer deals penalty_multiplier; see boss_rounds.json).",
     "ability_modes": "special_ability.effect.mode picks the implementation in EnemyAbilities: swap_solved_letters, reverse_answer, scale_remaining, mishear, blend. Abilities only fire at dungeon_depth >= unlock_depth, and each carries cooldown_turns (counted in attempts against that enemy type across the run).",
+    "round_timer_bonus": "Seconds added to the clock of each combat round against this enemy (CombatStateMachine adds it to the player's own timer bonus). Only the boss sets it; see docs/adr/006-a-clock-bonus-for-boss-rounds.md.",
     "no_counter_on_hit": "A boss flag: a correct answer that does not finish the enemy does not draw a counter-attack (only wrong answers and timeouts do), so a long multi-round fight is survivable."
   },
   "enemies": [
@@ -175,7 +176,8 @@
       "enemy_type": "thesaurus",
       "tier": 5,
       "is_boss": true,
-      "base_hp": 201,
+      "base_hp": 256,
+      "round_timer_bonus": 10,
       "base_damage": 30,
       "no_counter_on_hit": true,
       "attack_pattern": "synonym_shift",
@@ -192,7 +194,7 @@
       "resistance": null,
       "visual": { "portrait_key": "boss_thesaurus", "color_theme": "#B08D57" },
       "audio": { "spawn_key": "sfx_thesaurus_spawn", "attack_key": "sfx_thesaurus_attack", "defeat_key": "sfx_thesaurus_defeat" },
-      "scaling": { "hp_per_depth": 8, "damage_per_depth": 0 },
+      "scaling": { "hp_per_depth": 11, "damage_per_depth": 0 },
       "flavor_text": "It has a word for what you are about to become. Several, in fact."
     }
   ]

@@ -21,6 +21,7 @@ func run(_host: Node) -> void:
 	test_input_rejected_before_begin_and_after_finish()
 	test_finished_signal_fires_once()
 	test_case_insensitive_answer_accepted()
+	test_an_enemys_round_timer_bonus_extends_the_clock()
 
 #----------------------------------------------------------------------------
 # TESTS
@@ -167,6 +168,34 @@ func test_case_insensitive_answer_accepted() -> void:
 #----------------------------------------------------------------------------
 # HELPERS
 #----------------------------------------------------------------------------
+func test_an_enemys_round_timer_bonus_extends_the_clock() -> void:
+	var base_seconds := TimerSystem.calculate_max_time(1, {})
+	var plain := CombatStateMachine.new()
+	plain.setup(_clue("CAT"), _enemy(100), _player())
+	assert_approx(TimerSystem.calculate_max_time(1, plain._timer_modifiers()), base_seconds, "an enemy with no bonus changes nothing")
+
+	var boss := _enemy(100)
+	boss["round_timer_bonus"] = 8.0
+	var boss_player := _player()
+	var machine := CombatStateMachine.new()
+	machine.setup(_clue("CAT"), boss, boss_player)
+	assert_approx(TimerSystem.calculate_max_time(1, machine._timer_modifiers()), base_seconds + 8.0, "the enemy's seconds are added to the clue's clock")
+	assert_false(boss_player.has("timer_modifiers"), "and player_state is not scribbled on")
+
+	var geared := _player()
+	geared["timer_modifiers"] = {"timer_bonus": 5.0}
+	var stacked := CombatStateMachine.new()
+	stacked.setup(_clue("CAT"), boss, geared)
+	assert_approx(TimerSystem.calculate_max_time(1, stacked._timer_modifiers()), base_seconds + 13.0, "it stacks with the player's own timer bonus")
+
+	# A real clock started by the machine reads the same extended length.
+	var timer := SimTimer.new()
+	var timed := CombatStateMachine.new()
+	timed.setup(_clue("CAT"), boss, _player(), timer)
+	timed.begin()
+	assert_approx(timer.max_time, base_seconds + 8.0, "the timer the machine starts is the extended one")
+	timer.free()
+
 func _clue(answer: String) -> Dictionary:
 	return {
 		"id": "clue_test_%s" % answer.to_lower(),
