@@ -179,11 +179,11 @@ saved without a schema version bump).
   (cached asset loading).
 - `src/utils/Constants.gd` — enums, data paths, render colors.
 - `src/scenes/` — `MainMenuScene` and `DungeonScene` (the playable demo).
-- `data/` — `clues/clues_master.json` (121 clues, 7 categories, lengths
+- `data/` — `clues/clues_master.json` (376 clues, 7 categories, lengths
   3-10), `config/grid_presets.json` (6 size/density presets),
   `config/game_config.json` (balance constants), `enemies/enemies_master.json`
-  (5 enemies + 1 boss), `dictionaries/words_en.json` (16,360 words for
-  chain validation).
+  (5 enemies + 1 boss), `dictionaries/words_en.json` (16,451 words for
+  chain validation; it holds every clue answer except the abbreviations).
 
 ## Known scope and deliberate gaps
 
@@ -228,8 +228,9 @@ Everything below is a conscious gap, not an oversight:
 - **Dictionary Upgrades and the Dictionary-fragment drop are not built.**
   `ink_economy.dictionary_fragment_*` and `player_profile.dictionary_fragments`
   exist as config/state, but nothing drops or spends fragments, and the clue
-  pool is never gated by an "unlocked dictionary" (the 121-clue pool is too
-  small to shrink).
+  pool is never gated by an "unlocked dictionary". The pool is now 376 clues
+  (it was 121), which is the prerequisite: a base pool plus unlockable packs is
+  the next step.
 - **Cosmetic grid themes** are stored (`unlocked_themes`, `active_theme`) and
   survive a save, but there is nothing to buy or render yet.
 - **Ink per letter is 2** (`ink_economy.ink_per_letter`), not Design Doc

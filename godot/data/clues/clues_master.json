@@ -769,7 +769,7 @@
       "answer": "ENCHANTER",
       "length": 9,
       "category": "MAGIC_ARCANE",
-      "clue": "One who casts enchantments for a living",
+      "clue": "One who weaves spells of charm for a living",
       "difficulty": 3
     },
     {
@@ -1073,6 +1073,2205 @@
       "length": 3,
       "category": "GAME_JARGON",
       "clue": "When the whole adventuring party falls, for short",
+      "difficulty": 3,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_122_elf",
+      "answer": "ELF",
+      "length": 3,
+      "category": "FANTASY_CREATURES",
+      "clue": "Pointy-eared archer of the ancient woods",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_123_hag",
+      "answer": "HAG",
+      "length": 3,
+      "category": "FANTASY_CREATURES",
+      "clue": "Crone who brews curses in a hut",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_124_ent",
+      "answer": "ENT",
+      "length": 3,
+      "category": "FANTASY_CREATURES",
+      "clue": "Walking tree that rumbles through the old forest",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_125_roc",
+      "answer": "ROC",
+      "length": 3,
+      "category": "FANTASY_CREATURES",
+      "clue": "Giant bird said to carry off elephants",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_126_rat",
+      "answer": "RAT",
+      "length": 3,
+      "category": "FANTASY_CREATURES",
+      "clue": "Dungeon scavenger with a long pink tail",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_127_lich",
+      "answer": "LICH",
+      "length": 4,
+      "category": "FANTASY_CREATURES",
+      "clue": "Sorcerer who cheated death by hiding his soul",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_128_naga",
+      "answer": "NAGA",
+      "length": 4,
+      "category": "FANTASY_CREATURES",
+      "clue": "Serpent-bodied guardian of temple treasure",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_129_wisp",
+      "answer": "WISP",
+      "length": 4,
+      "category": "FANTASY_CREATURES",
+      "clue": "Faint floating light that lures travelers off the path",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_130_gnome",
+      "answer": "GNOME",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Small bearded folk who dwell among rocks and gems",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_131_drake",
+      "answer": "DRAKE",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Smaller, wingless cousin of the dragon",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_132_hydra",
+      "answer": "HYDRA",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Many-headed serpent that regrows what you sever",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_133_slime",
+      "answer": "SLIME",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Quivering blob that dissolves whatever it touches",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_134_mimic",
+      "answer": "MIMIC",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Treasure chest with teeth",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_135_demon",
+      "answer": "DEMON",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Fiend summoned from the fiery depths",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_136_harpy",
+      "answer": "HARPY",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Screeching bird-woman with sharp talons",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_137_satyr",
+      "answer": "SATYR",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Goat-legged reveler who plays the pipes",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_138_titan",
+      "answer": "TITAN",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Colossal being from the age before the gods",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_139_giant",
+      "answer": "GIANT",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Towering brute who grinds bones for bread",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_140_siren",
+      "answer": "SIREN",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Sea singer whose song wrecks ships",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_141_dryad",
+      "answer": "DRYAD",
+      "length": 5,
+      "category": "FANTASY_CREATURES",
+      "clue": "Spirit who lives inside a tree",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_142_kobold",
+      "answer": "KOBOLD",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Small scaly trickster that digs deadly traps",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_143_wraith",
+      "answer": "WRAITH",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Hollow-eyed spirit that drains the warmth from the living",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_144_sprite",
+      "answer": "SPRITE",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Tiny winged creature of meadow and glade",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_145_kraken",
+      "answer": "KRAKEN",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Tentacled terror that drags ships beneath the waves",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_146_gorgon",
+      "answer": "GORGON",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Snake-haired monster whose gaze turns men to stone",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_147_wyvern",
+      "answer": "WYVERN",
+      "length": 6,
+      "category": "FANTASY_CREATURES",
+      "clue": "Two-legged cousin of the dragon with a venomous tail",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_148_unicorn",
+      "answer": "UNICORN",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "White steed with a single spiraled horn",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_149_centaur",
+      "answer": "CENTAUR",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "Archer with a horse's body and a man's torso",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_150_chimera",
+      "answer": "CHIMERA",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "Fire-breathing mix of lion, goat and serpent",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_151_phoenix",
+      "answer": "PHOENIX",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "Firebird that rises from its own ashes",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_152_specter",
+      "answer": "SPECTER",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "Ghostly figure glimpsed at the edge of sight",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_153_boggart",
+      "answer": "BOGGART",
+      "length": 7,
+      "category": "FANTASY_CREATURES",
+      "clue": "Household spirit turned malicious",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_154_basilisk",
+      "answer": "BASILISK",
+      "length": 8,
+      "category": "FANTASY_CREATURES",
+      "clue": "Serpent king whose glare kills",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_155_behemoth",
+      "answer": "BEHEMOTH",
+      "length": 8,
+      "category": "FANTASY_CREATURES",
+      "clue": "Colossal beast of biblical size",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_156_revenant",
+      "answer": "REVENANT",
+      "length": 8,
+      "category": "FANTASY_CREATURES",
+      "clue": "One who returns from the grave for vengeance",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_157_minotaur",
+      "answer": "MINOTAUR",
+      "length": 8,
+      "category": "FANTASY_CREATURES",
+      "clue": "Bull-headed beast that haunts the labyrinth",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_158_scarecrow",
+      "answer": "SCARECROW",
+      "length": 9,
+      "category": "FANTASY_CREATURES",
+      "clue": "Straw-stuffed sentinel that walks at night",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_159_manticore",
+      "answer": "MANTICORE",
+      "length": 9,
+      "category": "FANTASY_CREATURES",
+      "clue": "Lion with a human face and a stinging tail",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_160_elemental",
+      "answer": "ELEMENTAL",
+      "length": 9,
+      "category": "FANTASY_CREATURES",
+      "clue": "Raging being made of pure earth, air, fire or water",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_161_cockatrice",
+      "answer": "COCKATRICE",
+      "length": 10,
+      "category": "FANTASY_CREATURES",
+      "clue": "Rooster-serpent whose touch turns flesh to stone",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_162_woe",
+      "answer": "WOE",
+      "length": 3,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Deep misfortune, in old verse",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_163_ire",
+      "answer": "IRE",
+      "length": 3,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Fury, in poetry",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_164_sin",
+      "answer": "SIN",
+      "length": 3,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "A wrong against the gods",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_165_fame",
+      "answer": "FAME",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "What bards spread and heroes win",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_166_rage",
+      "answer": "RAGE",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Blind, burning anger beyond all reason",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_167_doom",
+      "answer": "DOOM",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "A terrible fate that cannot be dodged",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_168_love",
+      "answer": "LOVE",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "What drives a quest to save the one you cherish",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_169_envy",
+      "answer": "ENVY",
+      "length": 4,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Coveting another's treasure",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_170_dread",
+      "answer": "DREAD",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Terror of what is yet to come",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_171_gloom",
+      "answer": "GLOOM",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Heavy darkness of the spirit",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_172_greed",
+      "answer": "GREED",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Hunger for gold that is never satisfied",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_173_wrath",
+      "answer": "WRATH",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Terrible anger of a god",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_174_spite",
+      "answer": "SPITE",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Malice for its own sake",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_175_shame",
+      "answer": "SHAME",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "The burn of public disgrace",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_176_guilt",
+      "answer": "GUILT",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Heavy conscience after a wrong",
+      "difficulty": 2,
+      "homophones": [
+        "GILT"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_177_valor",
+      "answer": "VALOR",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Courage in the face of battle",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_178_honor",
+      "answer": "HONOR",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "A knight's code and good name",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_179_faith",
+      "answer": "FAITH",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Trust without proof",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_180_mercy",
+      "answer": "MERCY",
+      "length": 5,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Sparing a defeated foe",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_181_terror",
+      "answer": "TERROR",
+      "length": 6,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Paralyzing, screaming fear",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_182_despair",
+      "answer": "DESPAIR",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Complete loss of hope",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_183_ecstasy",
+      "answer": "ECSTASY",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Overwhelming rapture",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_184_longing",
+      "answer": "LONGING",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Aching desire for what is far away",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_185_courage",
+      "answer": "COURAGE",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Facing the danger anyway",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_186_torment",
+      "answer": "TORMENT",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Prolonged agony of body or mind",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_187_resolve",
+      "answer": "RESOLVE",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Firm determination to see it through",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_188_remorse",
+      "answer": "REMORSE",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Deep regret for a deed done",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_189_anxiety",
+      "answer": "ANXIETY",
+      "length": 7,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Nervous worry before the unknown",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_190_serenity",
+      "answer": "SERENITY",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Calm that nothing can disturb",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_191_betrayal",
+      "answer": "BETRAYAL",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Breaking trust when it hurts most",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_192_devotion",
+      "answer": "DEVOTION",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Loyal love and dedication",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_193_ambition",
+      "answer": "AMBITION",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Burning drive to rise higher",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_194_contempt",
+      "answer": "CONTEMPT",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Looking down on someone as worthless",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_195_humility",
+      "answer": "HUMILITY",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Modesty about one's own deeds",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_196_reckless",
+      "answer": "RECKLESS",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Heedless of the danger ahead",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_197_fearless",
+      "answer": "FEARLESS",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Without any trace of fright",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_198_solitude",
+      "answer": "SOLITUDE",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "The state of being quite alone",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_199_euphoria",
+      "answer": "EUPHORIA",
+      "length": 8,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Intense, giddy happiness",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_200_vengeance",
+      "answer": "VENGEANCE",
+      "length": 9,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Payback for an old wrong",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_201_suspicion",
+      "answer": "SUSPICION",
+      "length": 9,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "A creeping feeling that something is wrong",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_202_treachery",
+      "answer": "TREACHERY",
+      "length": 9,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Deceit toward those who trust you",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_203_vigilance",
+      "answer": "VIGILANCE",
+      "length": 9,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Watchfulness against any threat",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_204_melancholy",
+      "answer": "MELANCHOLY",
+      "length": 10,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Pensive, lingering sadness",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_205_loneliness",
+      "answer": "LONELINESS",
+      "length": 10,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "The ache of having no company",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_206_resentment",
+      "answer": "RESENTMENT",
+      "length": 10,
+      "category": "EMOTIONS_ABSTRACT",
+      "clue": "Long-nursed bitterness over a grievance",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_207_pike",
+      "answer": "PIKE",
+      "length": 4,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Long thrusting weapon of foot soldiers",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_208_dirk",
+      "answer": "DIRK",
+      "length": 4,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Short dagger of the Scottish Highlands",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_209_club",
+      "answer": "CLUB",
+      "length": 4,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Crude bludgeon of the cave-dweller",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_210_mail",
+      "answer": "MAIL",
+      "length": 4,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Armor of interlocking metal rings",
+      "difficulty": 1,
+      "homophones": [
+        "MALE"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_211_bolt",
+      "answer": "BOLT",
+      "length": 4,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Short, heavy crossbow missile",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_212_lance",
+      "answer": "LANCE",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Knight's weapon, couched under the arm in a joust",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_213_flail",
+      "answer": "FLAIL",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Spiked ball on a chain",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_214_sling",
+      "answer": "SLING",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Leather strap that hurls stones",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_215_knife",
+      "answer": "KNIFE",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Small blade carried at the belt for cutting",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_216_staff",
+      "answer": "STAFF",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Walking stick that doubles as a weapon",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_217_armor",
+      "answer": "ARMOR",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Metal worn to turn aside blows",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_218_plate",
+      "answer": "PLATE",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Rigid metal covering for the torso",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_219_visor",
+      "answer": "VISOR",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Movable front of a helmet",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_220_arrow",
+      "answer": "ARROW",
+      "length": 5,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Feathered shaft loosed from a bow",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_221_shield",
+      "answer": "SHIELD",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Held up to block blows",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_222_rapier",
+      "answer": "RAPIER",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Slender sword made for thrusting",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_223_gorget",
+      "answer": "GORGET",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Piece of armor guarding the throat",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_224_bracer",
+      "answer": "BRACER",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Forearm guard worn by archers",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_225_quiver",
+      "answer": "QUIVER",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Holds an archer's arrows",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_226_scythe",
+      "answer": "SCYTHE",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Harvest tool turned grim weapon",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_227_tabard",
+      "answer": "TABARD",
+      "length": 6,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Short heraldic tunic worn over armor",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_228_buckler",
+      "answer": "BUCKLER",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Small round shield held in the fist",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_229_greaves",
+      "answer": "GREAVES",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Armor that protects the shins",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_230_cutlass",
+      "answer": "CUTLASS",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Short curved blade favored by pirates",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_231_trident",
+      "answer": "TRIDENT",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Three-pronged spear of the sea",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_232_longbow",
+      "answer": "LONGBOW",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Tall bow that broke the knights of France",
+      "difficulty": 2,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_233_hauberk",
+      "answer": "HAUBERK",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Long shirt of chain mail",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_234_cuirass",
+      "answer": "CUIRASS",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Breastplate and backplate together",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_235_javelin",
+      "answer": "JAVELIN",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Light spear made for throwing",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_236_barding",
+      "answer": "BARDING",
+      "length": 7,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Armor for a warhorse",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_237_scimitar",
+      "answer": "SCIMITAR",
+      "length": 8,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Single-edged curved sword of the desert",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_238_scabbard",
+      "answer": "SCABBARD",
+      "length": 8,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Sheath that holds a sword",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_239_longsword",
+      "answer": "LONGSWORD",
+      "length": 9,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Straight blade wielded with one hand or two",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_240_chainmail",
+      "answer": "CHAINMAIL",
+      "length": 9,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Flexible armor woven of small iron links",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_241_battleaxe",
+      "answer": "BATTLEAXE",
+      "length": 9,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Heavy axe with a broad blade for war",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_242_shortsword",
+      "answer": "SHORTSWORD",
+      "length": 10,
+      "category": "WEAPONS_ARMOR",
+      "clue": "Compact blade for close quarters",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_243_inn",
+      "answer": "INN",
+      "length": 3,
+      "category": "DUNGEON_PLACES",
+      "clue": "Where travelers rest and trade rumors",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_244_keep",
+      "answer": "KEEP",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "The strongest tower of a castle",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_245_moat",
+      "answer": "MOAT",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "Water-filled ditch around a castle",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_246_cell",
+      "answer": "CELL",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "Prison room with iron bars",
+      "difficulty": 1,
+      "homophones": [
+        "SELL"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_247_hall",
+      "answer": "HALL",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "Long room hung with banners and tables",
+      "difficulty": 1,
+      "homophones": [
+        "HAUL"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_248_tomb",
+      "answer": "TOMB",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "Stone resting place of a king",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_249_well",
+      "answer": "WELL",
+      "length": 4,
+      "category": "DUNGEON_PLACES",
+      "clue": "Deep shaft that may hide a secret door",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_250_vault",
+      "answer": "VAULT",
+      "length": 5,
+      "category": "DUNGEON_PLACES",
+      "clue": "Locked chamber for treasure",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_251_forge",
+      "answer": "FORGE",
+      "length": 5,
+      "category": "DUNGEON_PLACES",
+      "clue": "Where the smith hammers red-hot iron",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_252_altar",
+      "answer": "ALTAR",
+      "length": 5,
+      "category": "DUNGEON_PLACES",
+      "clue": "Table for offerings to the gods",
+      "difficulty": 2,
+      "homophones": [
+        "ALTER"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_253_shrine",
+      "answer": "SHRINE",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "Roadside holy spot hung with offerings",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_254_temple",
+      "answer": "TEMPLE",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "House of worship with towering pillars",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_255_armory",
+      "answer": "ARMORY",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "Room of racked weapons and spare shields",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_256_prison",
+      "answer": "PRISON",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "Where captives are kept under lock",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_257_cellar",
+      "answer": "CELLAR",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "Cool storage beneath a house",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_258_tavern",
+      "answer": "TAVERN",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "Ale-soaked gathering place",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_259_chapel",
+      "answer": "CHAPEL",
+      "length": 6,
+      "category": "DUNGEON_PLACES",
+      "clue": "Prayer room tucked inside a castle",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_260_citadel",
+      "answer": "CITADEL",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Fortress guarding a city",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_261_ossuary",
+      "answer": "OSSUARY",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Chamber stacked with bones",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_262_library",
+      "answer": "LIBRARY",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Shelves of forbidden books",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_263_archive",
+      "answer": "ARCHIVE",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Where old records are kept",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_264_archway",
+      "answer": "ARCHWAY",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Rounded stone span over an entrance",
+      "difficulty": 2,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_265_doorway",
+      "answer": "DOORWAY",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Opening a door swings in",
+      "difficulty": 2,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_266_stables",
+      "answer": "STABLES",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Where the knights keep their horses",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_267_hideout",
+      "answer": "HIDEOUT",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Secret refuge for outlaws",
+      "difficulty": 2,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_268_cloister",
+      "answer": "CLOISTER",
+      "length": 8,
+      "category": "DUNGEON_PLACES",
+      "clue": "Covered walk around a monastery courtyard",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_269_barracks",
+      "answer": "BARRACKS",
+      "length": 8,
+      "category": "DUNGEON_PLACES",
+      "clue": "Where the garrison sleeps and trains",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_270_rampart",
+      "answer": "RAMPART",
+      "length": 7,
+      "category": "DUNGEON_PLACES",
+      "clue": "Defensive wall walked by sentries",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_271_treasury",
+      "answer": "TREASURY",
+      "length": 8,
+      "category": "DUNGEON_PLACES",
+      "clue": "Room where the realm's wealth is stored",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_272_trapdoor",
+      "answer": "TRAPDOOR",
+      "length": 8,
+      "category": "DUNGEON_PLACES",
+      "clue": "Hidden hatch in the floor",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_273_corridor",
+      "answer": "CORRIDOR",
+      "length": 8,
+      "category": "DUNGEON_PLACES",
+      "clue": "Long, narrow hallway",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_274_stronghold",
+      "answer": "STRONGHOLD",
+      "length": 10,
+      "category": "DUNGEON_PLACES",
+      "clue": "Heavily fortified refuge",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_275_necropolis",
+      "answer": "NECROPOLIS",
+      "length": 10,
+      "category": "DUNGEON_PLACES",
+      "clue": "City of the dead",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_276_oubliette",
+      "answer": "OUBLIETTE",
+      "length": 9,
+      "category": "DUNGEON_PLACES",
+      "clue": "Hidden pit where captives were forgotten",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_277_reliquary",
+      "answer": "RELIQUARY",
+      "length": 9,
+      "category": "DUNGEON_PLACES",
+      "clue": "Casket for holy remains",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_278_cathedral",
+      "answer": "CATHEDRAL",
+      "length": 9,
+      "category": "DUNGEON_PLACES",
+      "clue": "Great church with soaring vaults",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_279_mausoleum",
+      "answer": "MAUSOLEUM",
+      "length": 9,
+      "category": "DUNGEON_PLACES",
+      "clue": "Grand stone tomb above ground",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_280_battlement",
+      "answer": "BATTLEMENT",
+      "length": 10,
+      "category": "DUNGEON_PLACES",
+      "clue": "Notched parapet along a castle wall",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_281_portcullis",
+      "answer": "PORTCULLIS",
+      "length": 10,
+      "category": "DUNGEON_PLACES",
+      "clue": "Iron grate lowered over a gateway",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_282_sun",
+      "answer": "SUN",
+      "length": 3,
+      "category": "NATURE_ELEMENTS",
+      "clue": "The star that warms the surface world",
+      "difficulty": 1,
+      "homophones": [
+        "SON"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_283_sea",
+      "answer": "SEA",
+      "length": 3,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Salt water stretching to the horizon",
+      "difficulty": 1,
+      "homophones": [
+        "SEE"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_284_mud",
+      "answer": "MUD",
+      "length": 3,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Wet earth that sucks at your boots",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_285_dew",
+      "answer": "DEW",
+      "length": 3,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Droplets on the morning grass",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_286_oak",
+      "answer": "OAK",
+      "length": 3,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Mighty tree that grows acorns",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_287_ash",
+      "answer": "ASH",
+      "length": 3,
+      "category": "NATURE_ELEMENTS",
+      "clue": "What is left once the fire dies",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_288_fern",
+      "answer": "FERN",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Feathery plant of damp shade",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_289_moss",
+      "answer": "MOSS",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Soft green carpet on old stone",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_290_vine",
+      "answer": "VINE",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Climbing plant that clings to walls",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_291_root",
+      "answer": "ROOT",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Underground anchor of a tree",
+      "difficulty": 1,
+      "homophones": [
+        "ROUTE"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_292_lava",
+      "answer": "LAVA",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Molten rock from a volcano",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_293_snow",
+      "answer": "SNOW",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "White flakes drifting down in winter",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_294_hail",
+      "answer": "HAIL",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Stones of ice falling from the sky",
+      "difficulty": 1,
+      "homophones": [
+        "HALE"
+      ],
+      "tags": [
+        "homophone"
+      ]
+    },
+    {
+      "id": "clue_295_mist",
+      "answer": "MIST",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Low cloud clinging to the ground",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_296_moon",
+      "answer": "MOON",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Pale light of the night sky",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_297_dust",
+      "answer": "DUST",
+      "length": 4,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Fine powder settling on forgotten things",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_298_stone",
+      "answer": "STONE",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Rock hewn into walls",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_299_river",
+      "answer": "RIVER",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Flowing water on its way to the sea",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_300_ocean",
+      "answer": "OCEAN",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Vast salt water between continents",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_301_flood",
+      "answer": "FLOOD",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Water overwhelming the land",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_302_cloud",
+      "answer": "CLOUD",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Grey mass drifting before the rain",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_303_earth",
+      "answer": "EARTH",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "The ground beneath our feet",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_304_swamp",
+      "answer": "SWAMP",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Boggy wetland thick with reeds",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_305_thorn",
+      "answer": "THORN",
+      "length": 5,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Sharp spine on a rose stem",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_306_canyon",
+      "answer": "CANYON",
+      "length": 6,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Deep gorge cut by a river",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_307_bramble",
+      "answer": "BRAMBLE",
+      "length": 7,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Prickly bush that snags cloaks",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_308_volcano",
+      "answer": "VOLCANO",
+      "length": 7,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Mountain that spits fire and ash",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_309_glacier",
+      "answer": "GLACIER",
+      "length": 7,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Slow river of ice",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_310_thunder",
+      "answer": "THUNDER",
+      "length": 7,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Rumbling roar after the flash",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_311_mountain",
+      "answer": "MOUNTAIN",
+      "length": 8,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Towering peak above the clouds",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_312_waterfall",
+      "answer": "WATERFALL",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Water spilling over a cliff edge",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_313_wildfire",
+      "answer": "WILDFIRE",
+      "length": 8,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Blaze racing through dry forest",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_314_blizzard",
+      "answer": "BLIZZARD",
+      "length": 8,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Howling snowstorm that buries roads",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_315_sandstorm",
+      "answer": "SANDSTORM",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Wall of whirling grit in the desert",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_316_earthquake",
+      "answer": "EARTHQUAKE",
+      "length": 10,
+      "category": "NATURE_ELEMENTS",
+      "clue": "The ground itself shaking and splitting",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_317_starlight",
+      "answer": "STARLIGHT",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Faint glow from distant suns",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_318_moonlight",
+      "answer": "MOONLIGHT",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Silver glow of the night",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_319_sunrise",
+      "answer": "SUNRISE",
+      "length": 7,
+      "category": "NATURE_ELEMENTS",
+      "clue": "The dawn's first light on the horizon",
+      "difficulty": 2,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_320_sunset",
+      "answer": "SUNSET",
+      "length": 6,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Daylight dying in red and gold",
+      "difficulty": 2,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_321_landslide",
+      "answer": "LANDSLIDE",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Hillside suddenly sliding down",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_322_stalagmite",
+      "answer": "STALAGMITE",
+      "length": 10,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Rising spire built by dripping cave water",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_323_nightfall",
+      "answer": "NIGHTFALL",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "The moment day gives way to dark",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_324_whirlpool",
+      "answer": "WHIRLPOOL",
+      "length": 9,
+      "category": "NATURE_ELEMENTS",
+      "clue": "Spinning water that pulls a boat under",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_325_hex",
+      "answer": "HEX",
+      "length": 3,
+      "category": "MAGIC_ARCANE",
+      "clue": "A curse cast upon an enemy",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_326_orb",
+      "answer": "ORB",
+      "length": 3,
+      "category": "MAGIC_ARCANE",
+      "clue": "Glowing sphere a seer gazes into",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_327_tome",
+      "answer": "TOME",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "Heavy volume of lost lore",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_328_mage",
+      "answer": "MAGE",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "Scholar of the arcane arts",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_329_seer",
+      "answer": "SEER",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "One who glimpses the future",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_330_omen",
+      "answer": "OMEN",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "Sign of things to come",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_331_aura",
+      "answer": "AURA",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "Faint glow said to surround a living being",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_332_brew",
+      "answer": "BREW",
+      "length": 4,
+      "category": "MAGIC_ARCANE",
+      "clue": "What a witch stirs in her cauldron",
+      "difficulty": 1
+    },
+    {
+      "id": "clue_333_spell",
+      "answer": "SPELL",
+      "length": 5,
+      "category": "MAGIC_ARCANE",
+      "clue": "Words of power spoken aloud",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_334_curse",
+      "answer": "CURSE",
+      "length": 5,
+      "category": "MAGIC_ARCANE",
+      "clue": "A lasting affliction laid on the unwary",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_335_sigil",
+      "answer": "SIGIL",
+      "length": 5,
+      "category": "MAGIC_ARCANE",
+      "clue": "A symbol charged with power",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_336_glyph",
+      "answer": "GLYPH",
+      "length": 5,
+      "category": "MAGIC_ARCANE",
+      "clue": "Carved symbol with a hidden meaning",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_337_magic",
+      "answer": "MAGIC",
+      "length": 5,
+      "category": "MAGIC_ARCANE",
+      "clue": "Power drawn from the unseen",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_338_elixir",
+      "answer": "ELIXIR",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Potion said to cure all ills",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_339_ritual",
+      "answer": "RITUAL",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Ceremony of fixed words and gestures",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_340_trance",
+      "answer": "TRANCE",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Dreamlike state between waking and sleep",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_341_summon",
+      "answer": "SUMMON",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Call forth from another plane",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_342_banish",
+      "answer": "BANISH",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Send away to the void",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_343_mystic",
+      "answer": "MYSTIC",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "One who seeks hidden truths",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_344_seance",
+      "answer": "SEANCE",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "A gathering to speak with the dead",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_345_amulet",
+      "answer": "AMULET",
+      "length": 6,
+      "category": "MAGIC_ARCANE",
+      "clue": "Charm worn to ward off harm",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_346_alchemy",
+      "answer": "ALCHEMY",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "Medieval craft of turning lead to gold",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_347_scrying",
+      "answer": "SCRYING",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "Gazing into a mirror to see far away",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_348_conjure",
+      "answer": "CONJURE",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "Bring forth from thin air",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_349_warlock",
+      "answer": "WARLOCK",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "One who bargains with dark powers",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_350_bewitch",
+      "answer": "BEWITCH",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "Cast a spell that charms the senses",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_351_crystal",
+      "answer": "CRYSTAL",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "Clear gem that focuses a mage's power",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_352_sorcerer",
+      "answer": "SORCERER",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "One born with innate magical power",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_353_teleport",
+      "answer": "TELEPORT",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "Vanish here and appear there",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_354_levitate",
+      "answer": "LEVITATE",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "Rise up into the air without wings",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_355_archmage",
+      "answer": "ARCHMAGE",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "Highest rank of wizardry",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_356_familiar",
+      "answer": "FAMILIAR",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "A witch's animal companion",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_357_prophecy",
+      "answer": "PROPHECY",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "A foretelling of what must come",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_358_illusion",
+      "answer": "ILLUSION",
+      "length": 8,
+      "category": "MAGIC_ARCANE",
+      "clue": "Trick of the eye woven with magic",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_359_incense",
+      "answer": "INCENSE",
+      "length": 7,
+      "category": "MAGIC_ARCANE",
+      "clue": "Fragrant smoke burned in rites",
+      "difficulty": 2
+    },
+    {
+      "id": "clue_360_invisible",
+      "answer": "INVISIBLE",
+      "length": 9,
+      "category": "MAGIC_ARCANE",
+      "clue": "Unseen by any eye",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_361_pentagram",
+      "answer": "PENTAGRAM",
+      "length": 9,
+      "category": "MAGIC_ARCANE",
+      "clue": "Five-pointed star drawn in a summoning circle",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_362_moonstone",
+      "answer": "MOONSTONE",
+      "length": 9,
+      "category": "MAGIC_ARCANE",
+      "clue": "Pale gem said to hold lunar power",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_363_necromancy",
+      "answer": "NECROMANCY",
+      "length": 10,
+      "category": "MAGIC_ARCANE",
+      "clue": "Speaking with the dead for their secrets",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_364_shapeshift",
+      "answer": "SHAPESHIFT",
+      "length": 10,
+      "category": "MAGIC_ARCANE",
+      "clue": "Change form at will",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_365_spellbound",
+      "answer": "SPELLBOUND",
+      "length": 10,
+      "category": "MAGIC_ARCANE",
+      "clue": "Held fast as though by a charm",
+      "difficulty": 3,
+      "tags": [
+        "compound"
+      ]
+    },
+    {
+      "id": "clue_366_phylactery",
+      "answer": "PHYLACTERY",
+      "length": 10,
+      "category": "MAGIC_ARCANE",
+      "clue": "Vessel that holds a lich's soul",
+      "difficulty": 3
+    },
+    {
+      "id": "clue_367_hud",
+      "answer": "HUD",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Display of health and mana laid over the screen, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_368_pvp",
+      "answer": "PVP",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Duels between real players, not monsters, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_369_pve",
+      "answer": "PVE",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Adventuring against computer-run monsters, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_370_afk",
+      "answer": "AFK",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Gone from the keyboard, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_371_dlc",
+      "answer": "DLC",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Extra content sold after launch, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_372_fps",
+      "answer": "FPS",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Shooters seen through your own eyes, for short",
+      "difficulty": 2,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_373_lfg",
+      "answer": "LFG",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Cry of a player seeking a party, for short",
+      "difficulty": 3,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_374_rng",
+      "answer": "RNG",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "The dice roll behind every drop and crit, for short",
+      "difficulty": 3,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_375_rts",
+      "answer": "RTS",
+      "length": 3,
+      "category": "GAME_JARGON",
+      "clue": "Strategy games where nobody waits for turns, for short",
+      "difficulty": 3,
+      "tags": [
+        "abbreviation"
+      ]
+    },
+    {
+      "id": "clue_376_crit",
+      "answer": "CRIT",
+      "length": 4,
+      "category": "GAME_JARGON",
+      "clue": "A lucky hit that does extra damage, for short",
       "difficulty": 3,
       "tags": [
         "abbreviation"
