@@ -23,8 +23,9 @@ Rules **(decided)**:
 1. **Daily board**: every player's score for one UTC day, highest first. Only the
    first finished run of a day counts, as today (replays are practice).
 2. **Weekly board**: a week runs **Sunday to Saturday, UTC**. A player's weekly
-   score is the **sum of their five best daily scores** in that week. Fewer than
-   five days played just means fewer scores in the sum.
+   score is the **sum of all their daily scores in that week** (up to seven, one
+   per day). A day not played adds nothing, so showing up every day is what
+   wins the week.
 3. **Hardcore is separate**: its own daily and weekly boards, ranked on the
    hardcore final score (already x1.5). Normal and hardcore scores never mix.
    **This needs a mode that does not exist yet.** Today the Daily Challenge is
@@ -61,7 +62,7 @@ the client cannot be trusted with the score, so the server must work it out.
 Why not the alternatives: rolling our own auth on a bare database means
 building sign-up, email verification, sessions and password-reset by hand, which
 is where the security mistakes come from; a document database (Firebase) makes
-"best five days per week" and rankings awkward; Godot or a separate game server
+"total per week" and rankings awkward; Godot or a separate game server
 would mean rewriting the game rules a second time. The JS rules are pure
 modules (`DungeonRun`, `BattleSession`, the seeded generators) and the daily
 dungeon is already deterministic across engines, so running them on the server
@@ -204,25 +205,20 @@ query can use the index.
 **Daily board**: `select ... from runs where board = $1 and mode = $2 and day = $3
 order by score desc, submitted_at limit 100`. Ties go to whoever finished first.
 
-**Weekly board**: a view over each user's five best days:
+**Weekly board**: a view that adds up each user's days in the week:
 
 ```sql
 create view weekly_scores as
 select user_id, board, mode, week_start,
-       sum(score)         as total,        -- best five days
+       sum(score)         as total,        -- all days played that week (at most 7)
        count(*)           as days_counted,
-       max(submitted_at)  as reached_at    -- when the counted total was complete
-from (
-  select *, row_number() over (
-    partition by user_id, board, mode, week_start
-    order by score desc, submitted_at) as rn
-  from runs
-) ranked
-where rn <= 5
+       max(submitted_at)  as reached_at    -- when the latest counted run was posted
+from runs
 group by user_id, board, mode, week_start;
 ```
 
-Ranked by `total desc, reached_at asc`. A week's board is final after Saturday
+Ranked by `total desc, reached_at asc` (a tie goes to whoever reached that total
+first). A week's board is final after Saturday
 UTC ends; the current week is live.
 
 **Security.** Row-level security on: nobody can insert, update or delete `runs`
@@ -239,8 +235,8 @@ exists. Boards are read through the function or through views that expose only
 who clears their browser data becomes a new guest, and anyone can register a
 second email, so a determined person can re-roll under a new identity. Replay
 verification stops fake scores; it does not stop this. The mitigations are that
-registering needs a working email, and that the weekly total takes the five best
-of seven days, so one lucky re-roll on one day buys little.
+registering needs a working email, and that a re-roll can only improve one day's
+score, which is a small share of a seven-day total.
 
 ## 7. API
 
@@ -294,7 +290,7 @@ constraint, plus a per-IP limit on `POST /api/runs`, `/api/profile` and sign-ups
 3. **Backend and guest boards.** Supabase project and migrations (tables, view,
    RLS), `POST /api/runs`, `GET /api/board`, anonymous sign-in, the Leaderboard
    dialog for guests (daily and weekly, both modes). SQL tests for the weekly
-   view (best five of seven, fewer than five, ties, week boundaries on a
+   view (a full seven days, fewer than seven, ties, week boundaries on a
    Sunday, hardcore kept apart).
 4. **Email sign-up and registered boards.** Magic-link registration that keeps
    the user id, `board` set from `finished_at` against `registered_at`, display names, the registered
@@ -330,19 +326,16 @@ Each can be reviewed and shipped on its own, and the game works at every step.
 2. **Hardcore is on its own**: its own boards (section 1) and its own daily
    dungeon (Daily Hardcore, section 9 step 1), not the normal Daily under
    different rules.
-3. Weekly score is the sum of a player's five best daily scores in a
-   Sunday-to-Saturday UTC week; guests are separate; a guest who registers
+3. Weekly score is the **sum of all of a player's daily scores in a
+   Sunday-to-Saturday UTC week** (seven days captured; a missed day adds
+   nothing); guests are separate; a guest who registers
    starts counting on registered boards from registration; sign-up is by email.
 
 ## 12. Open questions
 
-1. **"Best cumulative score, Sunday to Saturday".** I read this as the weekly
-   score being the sum of the five best daily scores in that Sunday-to-Saturday
-   week, as agreed. If you meant all seven days summed, the view changes from
-   `rn <= 5` to no limit.
-2. **Display names**: free text with a block list as above, or choose from a
+1. **Display names**: free text with a block list as above, or choose from a
    generated list (for example "Gentle Quill 482") with no moderation at all?
-3. **Minimum for the weekly board**: should a player with only one or two days
+2. **Minimum for the weekly board**: should a player with only one or two days
    appear, or only after, say, three? As written they appear.
-4. **Weekly prizes or titles?** Not in this plan; if yes, "final after Saturday"
+3. **Weekly prizes or titles?** Not in this plan; if yes, "final after Saturday"
    and tie-breaks above would need to be formalised.
