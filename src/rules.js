@@ -45,7 +45,7 @@ export function rulesSections(facts) {
     {
       title: 'Battles',
       paragraphs: [
-        `Opening a monster corridor starts a word battle. Tap letter tiles to build a word of 3 or more letters, then Cast Word. Real words hurt the monster; longer words, rare letters and unbroken streaks hurt more, and the dungeon's own theme words deal double. Defeat the monster to clear the corridor.${
+        `Opening a monster corridor starts a battle: the crossword steps aside and you fight the monster with words. Tap letter tiles to spell a word of 3 or more letters, then Cast Word to attack with it. Real words hurt the monster; longer words, rare letters and unbroken streaks hurt more, and the dungeon's own theme words deal double. Defeat the monster to clear the corridor.${
           hc ? ` Hardcore: you have ${hc.turnSeconds} seconds for each word. If the clock runs out the turn is wasted and the monster hits you.` : ''
         }`,
       ],

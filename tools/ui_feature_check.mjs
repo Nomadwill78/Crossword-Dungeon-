@@ -100,6 +100,84 @@ async function reachBattle(page) {
 }
 
 
+// ---- the battle reads as a fight ---------------------------------------------
+
+async function battleFramingChecks(profile) {
+  const box = (page, sel) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; });
+  const { context, page, errors } = await open(profile, { hero: 'duelist' });
+  check(await reachBattle(page), 'a battle starts');
+  const monster = await page.$eval('#monster-name', (e) => e.textContent);
+
+  check(await page.$eval('#battle-title', (e) => /BATTLE!/.test(e.textContent)), 'the screen says BATTLE!');
+  const hint = await page.$eval('#battle-hint', (e) => e.textContent);
+  check(hint.includes(monster) && hint.includes('Cast') && /(strikes|hits) back/.test(hint), `and the hint names the monster and how you attack (${hint.slice(0, 50)}...)`);
+  check(await page.$eval('#battle-banner', (e) => e.getAttribute('role') === 'status'), 'the banner is announced to screen readers');
+  check((await page.$eval('#monster-icon', (e) => e.textContent.trim())).length > 0, 'the monster has a portrait');
+  check(await page.$eval('#battle-hero', (e) => e.querySelector('svg') !== null), 'the hero is drawn facing it');
+  check((await page.$eval('.vs', (e) => e.textContent)) === 'VS', 'with VS between them');
+  check((await page.$eval('#battle-hp-text', (e) => e.textContent)) === (await hpText(page)), 'your HP shows on the battle screen too');
+  check((await page.$eval('#word-feedback', (e) => e.textContent)).includes(`attack on ${monster}`), 'the prompt over the tiles talks about attacking');
+  check((await page.$eval('#submit-word', (e) => e.textContent)).includes('Cast Word'), 'the button is still Cast Word');
+
+  check(await page.$eval('#battle-splash', (e) => !e.hidden), 'the splash appears as the fight opens');
+  if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_battle_start.png` });
+  await page.waitForTimeout(1500);
+  check(await page.$eval('#battle-splash', (e) => e.hidden), 'and goes away on its own');
+  check(await page.$eval('#battle-splash', (e) => getComputedStyle(e).pointerEvents === 'none'), 'without ever catching a tap');
+
+  // Layout: everything fits the screen.
+  const arena = await box(page, '#battle-arena');
+  check(arena.left >= 0 && arena.right <= profile.width + 1, 'the arena fits the screen width');
+  check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'and the page does not scroll sideways');
+  const submit = await box(page, '#submit-word');
+  check(submit.height >= (profile.touch ? 40 : 20), 'Cast Word is still easy to hit');
+
+  // A landed word floats its damage over the monster.
+  const hpBefore = await page.$eval('#monster-hp-text', (e) => e.textContent);
+  await castBestWord(page);
+  await page.waitForTimeout(150);
+  const foeStrike = await page.$eval('#fx-foe', (e) => e.textContent);
+  const heroStrike = await page.$eval('#fx-hero', (e) => e.textContent);
+  const hpAfter = await page.$eval('#monster-hp-text', (e) => e.textContent);
+  if (hpAfter !== hpBefore) {
+    check(/-\d+/.test(foeStrike), `a hit floats its damage over the monster (${foeStrike})`);
+    check(await page.$eval('#monster-icon', (e) => e.classList.contains('struck') || e.classList.contains('defeated')), 'and the monster flinches');
+  } else {
+    check(/-\d+/.test(heroStrike), `a miss floats the monster's hit over you (${heroStrike})`);
+  }
+  if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_battle_strike.png` });
+  await page.waitForTimeout(1300);
+  check((await page.$eval('#fx-foe', (e) => e.children.length)) + (await page.$eval('#fx-hero', (e) => e.children.length)) === 0, 'the floating text clears itself');
+
+  // A word that is not a word floats the monster's hit over the hero.
+  if (!(await page.$('#overlay:not([hidden])'))) {
+    const heroHpBefore = await page.$eval('#battle-hp-text', (e) => e.textContent);
+    await page.evaluate(() => {
+      const tiles = [...document.querySelectorAll('.rack-tile')];
+      tiles.slice(0, 3).forEach((t) => t.click());
+      document.getElementById('submit-word').click();
+    });
+    await page.waitForTimeout(150);
+    const text = await page.$eval('#fx-hero', (e) => e.textContent);
+    const heroHpAfter = await page.$eval('#battle-hp-text', (e) => e.textContent);
+    if (heroHpAfter !== heroHpBefore) check(/Not a word!/.test(text) && /-\d+/.test(text), `a bad word floats the monster's hit over you (${text})`);
+    else check(true, 'the three tiles happened to spell a word, so there was no miss to float');
+  }
+  check(errors.length === 0, `no script errors (${errors.join('; ')})`);
+  await context.close();
+
+  // Reduced motion: no splash (the banner is there all the time), still playable.
+  const calm = await browser.newContext({ viewport: { width: profile.width, height: profile.height }, hasTouch: profile.touch, isMobile: profile.touch, reducedMotion: 'reduce' });
+  await calm.addInitScript(() => localStorage.setItem('wordsmith-hero', 'duelist'));
+  const calmPage = await calm.newPage();
+  await calmPage.goto(staticServer.url);
+  await calmPage.waitForSelector('.cell');
+  check(await reachBattle(calmPage), 'with reduced motion a battle still starts');
+  check(await calmPage.$eval('#battle-splash', (e) => getComputedStyle(e).display === 'none'), 'and the splash is not shown');
+  check(await calmPage.$eval('#battle-banner', (e) => getComputedStyle(e).display !== 'none'), 'but the banner is');
+  await calm.close();
+}
+
 // ---- daily challenge ---------------------------------------------------------
 
 const layoutSignature = (page) => page.$$eval('.cell.filled', (cells) => cells
@@ -373,6 +451,7 @@ async function hardcoreChecks(profile) {
     check(fill.height >= 6 && fill.width >= track.width * 0.9, `the bar is drawn and full at the start (${Math.round(fill.width)}x${Math.round(fill.height)} of ${Math.round(track.width)}px)`);
     if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_hardcore_battle.png` });
 
+    await page.waitForSelector('#battle-splash', { state: 'hidden' }); // the clock waits for the opening splash
     await page.waitForTimeout(2500);
     const afterWait = await secs(page);
     check(afterWait <= HARDCORE.turnSeconds - 2 && afterWait >= HARDCORE.turnSeconds - 5, `it counts down (${afterWait}s after 2.5s)`);
@@ -410,6 +489,11 @@ async function hardcoreChecks(profile) {
     const { context, page, errors } = await open(profile, { hero: 'duelist', seed: HC_PREF, fakeClock: true });
     check(await reachBattle(page), 'reached a battle on a frozen clock');
     check(await secs(page) === HARDCORE.turnSeconds, 'the clock starts full');
+    check(!(await isHidden(page, '#battle-splash')), 'the BATTLE! splash covers the tiles as the fight opens');
+    await page.clock.runFor(1000);
+    check(await secs(page) === HARDCORE.turnSeconds && !(await isHidden(page, '#battle-splash')), 'and the clock waits: a second of splash costs no time');
+    await page.clock.runFor(350);
+    check(await isHidden(page, '#battle-splash'), 'the splash is gone after 1.3 seconds');
     const hp0 = Number((await hpText(page)).split('/')[0]);
     await page.clock.runFor((HARDCORE.turnSeconds - 1) * 1000);
     check((await secs(page)) === 1 && Number((await hpText(page)).split('/')[0]) === hp0, 'with one second left nothing has happened yet');
@@ -894,6 +978,7 @@ for (const profile of profiles) {
 
   await dailyChecks(profile);
   await hardcoreChecks(profile);
+  await battleFramingChecks(profile);
 }
 
 await browser.close();

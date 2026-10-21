@@ -41,13 +41,37 @@
       </section>
 
       <section id="battle-view" hidden>
-        <div id="battle-monster">
-          <h2 id="monster-name"></h2>
-          <div class="bar monster-bar"><div id="monster-hp-fill" class="fill"></div></div>
-          <span id="monster-hp-text"></span>
-          <div id="turn-timer" class="turn-timer" role="timer" aria-label="Time left for this word" hidden>
-            <div class="bar timer-bar"><div id="turn-fill" class="fill"></div></div>
-            <span id="turn-secs" class="turn-secs"></span>
+        <div id="battle-banner" class="battle-banner" role="status">
+          <span class="battle-swords" aria-hidden="true">&#9876;</span>
+          <div class="battle-banner-text">
+            <strong id="battle-title">BATTLE!</strong>
+            <span id="battle-hint"></span>
+          </div>
+        </div>
+
+        <div id="battle-arena" class="arena">
+          <div id="fighter-hero" class="fighter hero-side">
+            <div id="battle-hero" class="avatar"></div>
+            <span class="fighter-label">You</span>
+            <div class="bar player-bar"><div id="battle-hp-fill" class="fill"></div></div>
+            <span id="battle-hp-text" class="fighter-hp"></span>
+            <div id="fx-hero" class="fx-layer" aria-hidden="true"></div>
+          </div>
+
+          <div class="vs" aria-hidden="true">VS</div>
+
+          <div id="fighter-foe" class="fighter foe-side">
+            <div id="monster-icon" class="monster-icon" aria-hidden="true"></div>
+            <div id="battle-monster">
+              <h2 id="monster-name"></h2>
+              <div class="bar monster-bar"><div id="monster-hp-fill" class="fill"></div></div>
+              <span id="monster-hp-text"></span>
+              <div id="turn-timer" class="turn-timer" role="timer" aria-label="Time left for this word" hidden>
+                <div class="bar timer-bar"><div id="turn-fill" class="fill"></div></div>
+                <span id="turn-secs" class="turn-secs"></span>
+              </div>
+            </div>
+            <div id="fx-foe" class="fx-layer" aria-hidden="true"></div>
           </div>
         </div>
 
@@ -59,12 +83,18 @@
         <div id="battle-rack"></div>
 
         <div id="battle-controls">
-          <button id="submit-word">Cast Word</button>
+          <button id="submit-word"><span aria-hidden="true">&#9876;</span> Cast Word</button>
           <button id="clear-word">Clear</button>
           <span id="combo-indicator"></span>
         </div>
 
         <div id="battle-log"></div>
+
+        <div id="battle-splash" class="battle-splash" hidden aria-hidden="true">
+          <span class="splash-swords">&#9876;</span>
+          <strong id="splash-title">BATTLE!</strong>
+          <em id="splash-name"></em>
+        </div>
       </section>
 
       <div id="help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">

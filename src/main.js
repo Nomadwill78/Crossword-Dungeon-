@@ -1,5 +1,6 @@
 import { DungeonRun, RETREAT_HP_FRACTION } from './dungeon.js';
 import { BattleSession, LETTER_VALUES } from './combat.js';
+import { battleFraming, strikeEffect, wordPrompt } from './battlefx.js';
 import { LEVEL_ONE } from './wordlist.js';
 import { HINT_LEVELS } from './hints.js';
 import { HeroAvatar, avatarSvg } from './avatar.js';
@@ -20,6 +21,17 @@ const els = {
   mapView: document.getElementById('map-view'),
   battleView: document.getElementById('battle-view'),
   monsterName: document.getElementById('monster-name'),
+  monsterIcon: document.getElementById('monster-icon'),
+  battleTitle: document.getElementById('battle-title'),
+  battleHint: document.getElementById('battle-hint'),
+  battleHero: document.getElementById('battle-hero'),
+  battleHpFill: document.getElementById('battle-hp-fill'),
+  battleHpText: document.getElementById('battle-hp-text'),
+  fxHero: document.getElementById('fx-hero'),
+  fxFoe: document.getElementById('fx-foe'),
+  battleSplash: document.getElementById('battle-splash'),
+  splashTitle: document.getElementById('splash-title'),
+  splashName: document.getElementById('splash-name'),
   monsterHpFill: document.getElementById('monster-hp-fill'),
   monsterHpText: document.getElementById('monster-hp-text'),
   playerHpFill: document.getElementById('player-hp-fill'),
@@ -113,6 +125,8 @@ let battle = null;
 let activeBattlePlacementIndex = null;
 
 const avatar = new HeroAvatar(els.avatar, hero);
+/** The same hero, larger, facing the monster on the battle screen. */
+const battleAvatar = new HeroAvatar(els.battleHero, hero);
 /** The corridor whose clue is selected; its word glows on the grid. */
 let activeIndex = null;
 /** Corridors whose Hints panel is open (the panel is rebuilt on every render). */
@@ -136,6 +150,9 @@ function setHp(hp, maxHp) {
   els.playerHpFill.style.width = `${Math.round((hp / maxHp) * 100)}%`;
   els.playerHpText.textContent = `${hp}/${maxHp}`;
   avatar.update(hp, maxHp);
+  els.battleHpFill.style.width = `${Math.round((hp / maxHp) * 100)}%`;
+  els.battleHpText.textContent = `${hp}/${maxHp}`;
+  battleAvatar.update(hp, maxHp);
   els.heroBtn.setAttribute('aria-label', `${els.avatar.getAttribute('aria-label')}. Change hero`);
 }
 
@@ -570,16 +587,64 @@ function startBattle(index) {
   els.mapView.hidden = true;
   els.battleView.hidden = false;
   window.scrollTo(0, 0);
+  introduceBattle(battle.monster);
   renderBattle();
   startTurnClock();
+}
+
+let splashTimer = null;
+
+/**
+ * Tell the player this is a fight, not another puzzle: the banner and hint, the
+ * monster's portrait, and a brief BATTLE! splash. The splash does not catch taps,
+ * and the hardcore clock waits for it (turnPaused), so it never costs the player time.
+ */
+function introduceBattle(monster) {
+  const framing = battleFraming(monster);
+  els.battleView.classList.toggle('boss', framing.boss);
+  els.battleTitle.textContent = framing.title;
+  els.battleHint.textContent = framing.hint;
+  els.monsterIcon.textContent = framing.icon;
+  els.monsterIcon.classList.remove('struck', 'defeated');
+  els.fxFoe.innerHTML = '';
+  els.fxHero.innerHTML = '';
+  els.splashTitle.textContent = framing.title;
+  els.splashName.textContent = framing.splashName;
+  clearTimeout(splashTimer);
+  els.battleSplash.hidden = true;
+  void els.battleSplash.offsetWidth; // restart the animation
+  els.battleSplash.hidden = false;
+  splashTimer = setTimeout(() => { els.battleSplash.hidden = true; }, 1300);
+}
+
+/** Float the result of a cast over whoever it happened to. */
+function playStrike(result) {
+  const effect = strikeEffect(result);
+  if (!effect) return;
+  const layer = effect.side === 'foe' ? els.fxFoe : els.fxHero;
+  const el = document.createElement('div');
+  el.className = `strike ${effect.kind}`;
+  el.innerHTML = `<span class="label"></span><span class="amount"></span>`;
+  el.querySelector('.label').textContent = effect.label;
+  el.querySelector('.amount').textContent = effect.amount;
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 1100);
+  if (effect.side === 'foe') {
+    els.monsterIcon.classList.remove('struck');
+    void els.monsterIcon.offsetWidth;
+    els.monsterIcon.classList.add('struck');
+  }
 }
 
 // ---- the hardcore battle clock -----------------------------------------------
 
 let turnClock = null; // { remainingMs, last, timer } while a hardcore word is on the clock
 
-/** The clock stands still while the player reads a card, or is away. */
-const turnPaused = () => document.hidden || openModalEl !== null || !els.overlay.hidden;
+/** The clock stands still while the player reads a card, is away, or the opening splash covers the tiles. */
+const turnPaused = () => document.hidden || openModalEl !== null || !els.overlay.hidden || splashCovers();
+
+/** True while the BATTLE! splash is actually on screen (reduced motion never shows it). */
+const splashCovers = () => !els.battleSplash.hidden && els.battleSplash.offsetParent !== null;
 
 function renderTurnClock() {
   const seconds = HARDCORE.turnSeconds;
@@ -620,17 +685,19 @@ function tickTurnClock() {
   if (paused) return;
   turnClock.remainingMs -= elapsed;
   if (turnClock.remainingMs <= 0) {
-    battle.timeOut();
+    const result = battle.timeOut();
     showToast('Out of time!');
-    finishCast();
+    finishCast(result);
     return;
   }
   renderTurnClock();
 }
 
 /** What follows a cast (or a timeout): redraw, then either end the battle or restart the clock. */
-function finishCast() {
+function finishCast(result) {
   renderBattle();
+  playStrike(result);
+  if (battle.won) els.monsterIcon.classList.add('defeated');
   if (!battle.over) {
     startTurnClock();
     return;
@@ -703,9 +770,7 @@ function renderBattle() {
     });
     els.wordSlots.appendChild(div);
   }
-  els.wordFeedback.textContent = battle.currentWord()
-    ? `${battle.currentWord()} (${battle.currentWord().length} letters)`
-    : 'Select letters to build a word';
+  els.wordFeedback.textContent = wordPrompt(battle.currentWord(), battle.monster.name);
 
   els.rack.innerHTML = '';
   for (const tile of battle.availableTiles()) {
@@ -731,8 +796,8 @@ function renderBattle() {
 
 els.submitWord.addEventListener('click', () => {
   if (!battle || battle.over) return;
-  battle.submit();
-  finishCast();
+  const result = battle.submit();
+  finishCast(result);
 });
 
 els.clearWord.addEventListener('click', () => {
@@ -1060,6 +1125,7 @@ function startRun(chosen, dailyRun = null, hardcore = false) {
   els.battleView.hidden = true;
   els.mapView.hidden = false;
   avatar.setHero(hero);
+  battleAvatar.setHero(hero);
   window.scrollTo(0, 0);
   renderMap();
   updateDailyButton();
