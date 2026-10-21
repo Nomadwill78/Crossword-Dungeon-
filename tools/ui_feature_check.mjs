@@ -178,6 +178,105 @@ async function battleFramingChecks(profile) {
   await calm.close();
 }
 
+// ---- the hardcore daily ------------------------------------------------------
+
+async function dailyHardcoreChecks(profile) {
+  const DAY = '2026-10-12';
+  const NOW = new Date(`${DAY}T12:00:00Z`);
+  const hcHero = dailyHero(DAY, 'hardcore');
+  const hcMax = 40 + maxHpBonus(hcHero);
+  const box = (page, sel) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; });
+  const isHidden = (page, sel) => page.$eval(sel, (e) => e.hidden);
+  const standardHistory = JSON.stringify({ '2026-10-11': { score: 280, retreats: 2, hintsUsed: 0, hero: 'warden' } });
+  const hardHistory = JSON.stringify({ '2026-10-11': { score: 500, retreats: 0, hintsUsed: 0, hero: 'scribe', outcome: 'won' } });
+  const seed = { 'wordsmith-daily': standardHistory, 'wordsmith-daily-hardcore': hardHistory };
+
+  // the standard daily's dungeon for comparison
+  const S = await open(profile, { hero: 'duelist', now: NOW, seed });
+  await S.page.click('#daily-btn');
+  await S.page.click('#hero-start');
+  const standardLayout = await layoutSignature(S.page);
+  await S.context.close();
+
+  const { context, page, errors } = await open(profile, { hero: 'duelist', now: NOW, seed });
+  await page.click('#daily-btn');
+  check(await page.$eval('#daily-mode-normal', (b) => b.getAttribute('aria-checked') === 'true'), 'the Daily tab starts on the standard daily');
+  check(await page.$eval('#daily-mode-hardcore', (b) => b.getAttribute('aria-checked') === 'false'), 'with Hardcore one tap away');
+  check((await box(page, '#daily-mode-hardcore')).height >= 44, 'the switch is easy to hit');
+  check((await page.$eval('#hero-start', (b) => b.textContent)) === "Play today's challenge", 'the standard button is unchanged');
+
+  await page.click('#daily-mode-hardcore');
+  check(await page.$eval('#daily-mode-hardcore', (b) => b.getAttribute('aria-checked') === 'true'), 'tapping Hardcore selects it');
+  const panel = await page.$eval('#daily-body', (e) => e.innerText);
+  check(/hardcore dungeon/.test(panel) && panel.includes(DAY), 'the panel names the hardcore dungeon and the date');
+  check(panel.includes(`Today's hero: ${hcHero.name}`), `with its own hero (${hcHero.name})`);
+  check(/No retreat/.test(panel) && new RegExp(`${HARDCORE.turnSeconds}s per word`).test(panel) && /×1\.5/.test(panel), 'and sums up the hardcore rules in one line');
+  check(/Streak\s*1 day/.test(panel), 'with its own streak (one day), apart from the standard one');
+  check((await page.$eval('#hero-start', (b) => b.textContent)) === "Play today's hardcore challenge", 'the button says it is hardcore');
+  const card = await box(page, '.hero-card-wrap');
+  check(card.top >= 0 && card.bottom <= profile.height + 1 && card.right <= profile.width + 1, 'the picker still fits the screen');
+  if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_daily_hardcore_tab.png` });
+
+  await page.focus('#daily-mode-hardcore');
+  await page.keyboard.press('ArrowLeft');
+  check(await page.$eval('#daily-mode-normal', (b) => b.getAttribute('aria-checked') === 'true') && (await page.evaluate(() => document.activeElement.id)) === 'daily-mode-normal', 'arrow keys move between the two and take focus');
+  await page.keyboard.press('ArrowRight');
+  check((await page.$eval('#hero-start', (b) => b.textContent)) === "Play today's hardcore challenge", 'and the button follows');
+
+  await page.click('#hero-start');
+  check(await isHidden(page, '#hero-modal'), 'starting closes the picker');
+  check(await page.$eval('#hc-badge', (b) => !b.hidden), 'the hardcore badge is on');
+  check(await page.$eval('#avatar', (e) => e.dataset.hero) === hcHero.id, 'the hero is the day\'s hardcore hero');
+  check((await hpText(page)) === `${hcMax}/${hcMax}`, `at ${hcMax} HP`);
+  const hardLayout = await layoutSignature(page);
+  check(hardLayout !== standardLayout, 'the dungeon is not the standard daily\'s dungeon');
+  check(await page.evaluate(() => localStorage.getItem('wordsmith-hero')) === 'duelist', 'the saved free-play hero is untouched');
+  check(await page.evaluate(() => localStorage.getItem('wordsmith-hardcore')) === null, 'and the free-play hardcore setting is untouched');
+
+  // the same day gives the same dungeon to someone else
+  const other = await open(profile, { hero: 'warden', now: NOW });
+  await other.page.click('#daily-btn');
+  await other.page.click('#daily-mode-hardcore');
+  await other.page.click('#hero-start');
+  check((await layoutSignature(other.page)) === hardLayout, 'another player gets the very same hardcore dungeon');
+  await other.context.close();
+
+  check(await reachBattle(page), 'a battle starts');
+  check(await page.waitForSelector('#turn-timer:not([hidden])', { timeout: 3000 }).then(() => true, () => false), 'with the word clock running');
+
+  // play it out: a win or a fall is the day's result
+  const { outcome } = await playUntilOver(page);
+  await page.evaluate(() => document.getElementById('overlay').click());
+  await page.waitForSelector('#result-modal:not([hidden])', { timeout: 5000 });
+  const resultText = await page.$eval('#result-body', (e) => e.innerText);
+  check(/Recorded as your hardcore result for 2026-10-12/.test(resultText), `the result card records it (${outcome})`);
+  check(new RegExp(outcome === 'won' ? 'Cleared' : 'Fell').test(resultText), `and says how it ended (${outcome === 'won' ? 'Cleared' : 'Fell'})`);
+  check(/Streak: 2 days/.test(resultText), 'extending the hardcore streak to two days');
+  const share = await page.$eval('#result-share', (e) => e.textContent);
+  check(share.includes('Daily Hardcore 2026-10-12') && share.includes(outcome === 'won' ? 'Cleared' : 'Fell'), 'the share text is a hardcore one');
+  const saved = await page.evaluate(() => ({
+    hard: JSON.parse(localStorage.getItem('wordsmith-daily-hardcore') ?? '{}'),
+    normal: JSON.parse(localStorage.getItem('wordsmith-daily') ?? '{}'),
+    stats: localStorage.getItem('wordsmith-hardcore-stats'),
+  }));
+  check(saved.hard[DAY]?.outcome === outcome && saved.hard[DAY].hero === hcHero.id, 'the result is saved under the hardcore daily');
+  check(Object.keys(saved.normal).join() === '2026-10-11', 'the standard daily\'s results are untouched');
+  check(saved.stats === null, 'and the free-play hardcore record is untouched');
+  if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_daily_hardcore_result.png` });
+  await page.click('#result-close');
+
+  // the day is done: a replay is practice, and the standard daily is still open
+  await page.click('#daily-btn');
+  await page.click('#daily-mode-hardcore');
+  check(/Done today/.test(await page.$eval('#daily-body', (e) => e.innerText)), 'the hardcore panel now says it is done');
+  check((await page.$eval('#hero-start', (b) => b.textContent)) === 'Practice (not recorded)', 'a replay is practice');
+  await page.click('#daily-mode-normal');
+  check((await page.$eval('#hero-start', (b) => b.textContent)) === "Play today's challenge", 'while the standard daily is still waiting');
+  check(await page.$eval('#daily-btn', (b) => b.classList.contains('active')), 'and the Daily button still shows a daily run is on');
+  check(errors.length === 0, `no script errors (${errors.join('; ')})`);
+  await context.close();
+}
+
 // ---- daily challenge ---------------------------------------------------------
 
 const layoutSignature = (page) => page.$$eval('.cell.filled', (cells) => cells
@@ -979,6 +1078,7 @@ for (const profile of profiles) {
   await dailyChecks(profile);
   await hardcoreChecks(profile);
   await battleFramingChecks(profile);
+  await dailyHardcoreChecks(profile);
 }
 
 await browser.close();

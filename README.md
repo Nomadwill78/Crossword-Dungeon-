@@ -71,9 +71,9 @@ Then open `http://localhost:8080/`.
   - **Final Score x1.5**, and your hardcore wins, falls and best Score are kept
     on this device.
 
-  The Daily Challenge is always played on normal rules. The Godot design doc
-  gates hardcore behind player level 15; this build has no player levels, so it
-  is available from the start.
+  Hardcore also has its own daily (see **Daily Hardcore** below). The Godot
+  design doc gates hardcore behind player level 15; this build has no player
+  levels, so it is available from the start.
 - **Daily Challenge** (the Daily button in the header, or the Daily tab in the
   new-run picker): one dungeon a day, the same for everyone. The day is the UTC
   date and it fixes the grid layout, the hero, and every dice roll (battle
@@ -82,7 +82,16 @@ Then open `http://localhost:8080/`.
   on this device with its Score, retreats and hints used, and extends your
   streak. Replays are practice and do not count. The result card has a
   copy-to-clipboard share text. There is no server, so there is no global
-  leaderboard; results are compared by sharing them.
+  leaderboard; results are compared by sharing them (online boards are planned,
+  see below).
+- **Daily Hardcore** (the Hardcore switch on the Daily tab): a second daily with
+  its **own dungeon and hero** each day (seeded with a different salt, so it is
+  a different puzzle from the standard daily, not the same one made harder),
+  played under the hardcore rules above. It has its own once-a-day result, kept
+  apart from the standard one: the first finished run counts, and a fall counts
+  as finished as much as a win does. It has its own streak, its own share text
+  ("Daily Hardcore ... Cleared / Fell"), and does not touch your free-play
+  hardcore record.
 - The hero portrait beside the HP bar reacts to health: confident, wary,
   battered, then defeated at 0 HP (`src/avatar.js`).
 - Stuck on a clue? Open **Stuck? Hints** on its card. Pay in Score or HP
@@ -152,8 +161,9 @@ clue and wins each battle with the best word on the rack).
 **Changing the daily:** the pinned values in `tests/web/rng.test.mjs` and
 `tests/web/seeded.test.mjs` (the hash, the generator, and one day's layout)
 exist so nobody changes everyone's puzzle by accident. Editing the word list,
-the generator or the seed derivation changes every day's dungeon; update those
-pins on purpose when you do. Set `PLAYWRIGHT_MODULE` / `CHROMIUM_PATH` if Playwright or Chromium
+the generator or the seed derivation changes every day's dungeon (both dailies);
+update those pins on purpose when you do. The two dailies' salts live in
+`src/daily.js` and must never change once players have results saved under them. Set `PLAYWRIGHT_MODULE` / `CHROMIUM_PATH` if Playwright or Chromium
 are not installed in the usual place.
 
 ## Known scope / next steps

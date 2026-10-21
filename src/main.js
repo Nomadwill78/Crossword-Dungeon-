@@ -73,6 +73,8 @@ const els = {
   panelFree: document.getElementById('panel-free'),
   panelDaily: document.getElementById('panel-daily'),
   dailyBody: document.getElementById('daily-body'),
+  dailyModeNormal: document.getElementById('daily-mode-normal'),
+  dailyModeHardcore: document.getElementById('daily-mode-hardcore'),
   resultModal: document.getElementById('result-modal'),
   resultBody: document.getElementById('result-body'),
   resultShare: document.getElementById('result-share'),
@@ -98,16 +100,19 @@ const storage = {
   getItem: (key) => localStorage.getItem(key),
   setItem: (key, value) => localStorage.setItem(key, value),
 };
-let dailyResults = loadResults(storage);
+/** Saved results of the two dailies, kept apart: the standard one and Daily Hardcore. */
+let dailyResults = { normal: loadResults(storage, 'normal'), hardcore: loadResults(storage, 'hardcore') };
+/** Which daily the picker's Daily tab is showing. */
+let shownDailyMode = 'normal';
 let hardcoreStats = loadStats(storage);
 /** Whether the last free run was hardcore (the picker's toggle remembers it). */
 let hardcorePref = false;
 try { hardcorePref = localStorage.getItem(HARDCORE_PREF_KEY) === '1'; } catch { /* no storage */ }
 
 /** Pick up anything saved by another tab, without losing what is only in memory. */
-function refreshDailyResults() {
-  dailyResults = { ...loadResults(storage), ...dailyResults };
-  return dailyResults;
+function refreshDailyResults(mode = 'normal') {
+  dailyResults[mode] = { ...loadResults(storage, mode), ...dailyResults[mode] };
+  return dailyResults[mode];
 }
 
 /** The hero for this run. In free play, the one chosen last time (or the
@@ -116,7 +121,7 @@ let hero = heroById(savedHeroId());
 /** The player's own pick, kept apart from the daily hero so a daily run never
  * overwrites it. */
 let freeHero = hero;
-/** Set during a Daily Challenge run: { key, official }. null in free play. */
+/** Set during a Daily Challenge run: { key, mode, official }. null in free play. */
 let daily = null;
 /** True once this run's win has been announced (and, for a daily, recorded). */
 let victoryShown = false;
@@ -741,7 +746,12 @@ function endBattle() {
   window.scrollTo(0, 0);
   renderMap();
   if (dungeon.fallen) {
-    // Hardcore: no retreat. The run is over.
+    // Hardcore: no retreat. The run is over. A Daily Hardcore fall is that
+    // day's result; a free hardcore fall goes in the free-play record.
+    if (daily) {
+      openResult(finishDaily());
+      return;
+    }
     recordHardcoreRun(false);
     openHeroPicker({ dismissable: true, title: 'Play again?' });
     return;
@@ -834,7 +844,7 @@ function checkVictory() {
   const text = dungeon.hardcore
     ? `Hardcore! Score ${dungeon.score} \u00d7${HARDCORE.scoreMultiplier} = ${dungeon.finalScore()}. Every monster corridor has been silenced.`
     : `Final score: ${dungeon.score}. Every monster corridor has been silenced.`;
-  if (dungeon.hardcore) recordHardcoreRun(true);
+  if (dungeon.hardcore && !daily) recordHardcoreRun(true);
   if (daily) {
     // Recorded now, not when the overlay is dismissed, so closing the tab can't lose it.
     const outcome = finishDaily();
@@ -1002,15 +1012,16 @@ function selectTab(name) {
     tab.tabIndex = on ? 0 : -1;
     panel.hidden = !on;
   }
-  if (isDaily) renderDailyPanel();
+  if (isDaily) selectDailyMode(shownDailyMode);
   updateStartButton();
 }
 
 function updateStartButton() {
   const progress = runHasProgress();
   if (activeTab === 'daily') {
-    const done = !!refreshDailyResults()[dailyKey(new Date())];
-    els.heroStart.textContent = done ? 'Practice (not recorded)' : "Play today's challenge";
+    const done = !!refreshDailyResults(shownDailyMode)[dailyKey(new Date())];
+    const hard = shownDailyMode === 'hardcore' ? ' hardcore' : '';
+    els.heroStart.textContent = done ? 'Practice (not recorded)' : `Play today's${hard} challenge`;
   } else {
     const hard = els.hardcoreToggle.checked ? ' hardcore' : '';
     els.heroStart.textContent = progress ? `Start new${hard} run` : `Begin${hard} run`;
@@ -1034,23 +1045,38 @@ function element(tag, className, text) {
 }
 
 function describeResult(r) {
-  return `${r.score} Score \u00b7 ${r.retreats} ${r.retreats === 1 ? 'retreat' : 'retreats'} \u00b7 ${r.hintsUsed} ${r.hintsUsed === 1 ? 'hint' : 'hints'}`;
+  const hints = `${r.hintsUsed} ${r.hintsUsed === 1 ? 'hint' : 'hints'}`;
+  // A hardcore result says how it ended; it has no retreats to count.
+  if (r.outcome) return `${r.score} Score \u00b7 ${r.outcome === 'won' ? 'Cleared' : 'Fell'} \u00b7 ${hints}`;
+  return `${r.score} Score \u00b7 ${r.retreats} ${r.retreats === 1 ? 'retreat' : 'retreats'} \u00b7 ${hints}`;
 }
 
 /** The day the Daily tab is currently showing (it can go stale if left open past midnight UTC). */
 let shownDailyKey = null;
 
+/** Switch the Daily tab between the standard daily and Daily Hardcore. */
+function selectDailyMode(mode) {
+  shownDailyMode = mode;
+  for (const [button, name] of [[els.dailyModeNormal, 'normal'], [els.dailyModeHardcore, 'hardcore']]) {
+    button.setAttribute('aria-checked', String(name === mode));
+    button.tabIndex = name === mode ? 0 : -1;
+  }
+  renderDailyPanel();
+  updateStartButton();
+}
+
 function renderDailyPanel() {
   const now = new Date();
   const key = dailyKey(now);
   shownDailyKey = key;
-  const todaysHero = dailyHero(key);
-  const results = refreshDailyResults();
+  const hardcore = shownDailyMode === 'hardcore';
+  const todaysHero = dailyHero(key, shownDailyMode);
+  const results = refreshDailyResults(shownDailyMode);
   const record = results[key];
   const streak = computeStreak(results, key);
 
   const date = element('p', 'daily-date');
-  date.append("Today's dungeon \u00b7 ", element('strong', '', key), ' (UTC)');
+  date.append(hardcore ? "Today's hardcore dungeon \u00b7 " : "Today's dungeon \u00b7 ", element('strong', '', key), ' (UTC)');
 
   const card = element('div', 'daily-hero');
   const portrait = element('div', 'avatar hero-portrait');
@@ -1068,14 +1094,25 @@ function renderDailyPanel() {
   const status = element('p', `daily-status${record ? ' done' : ''}`);
   status.textContent = record
     ? `Done today: ${describeResult(record)}. Replays are practice and are not recorded.`
-    : 'Same dungeon, hero and starting letters for everyone. Your first finished run today counts.';
+    : hardcore
+      ? 'Its own dungeon and hero, the same for everyone, under hardcore rules. Your first finished run today, a win or a fall, counts.'
+      : 'Same dungeon, hero and starting letters for everyone. Your first finished run today counts.';
+  // One compact line (the full wording is in the Free play tab and the rules card),
+  // so the start button stays on screen on a small phone.
+  const free = HARDCORE.freeWrongGuesses;
+  const rules = hardcore
+    ? element(
+      'p', 'daily-rules',
+      `No retreat \u00b7 ${HARDCORE.turnSeconds}s per word \u00b7 ${free} free ${free === 1 ? 'retry' : 'retries'}, then \u2212${HARDCORE.wrongGuessHp} HP \u00b7 Score \u00d7${HARDCORE.scoreMultiplier}`
+    )
+    : null;
 
   const meta = element('div', 'daily-meta');
   const streakText = element('span');
   streakText.append('Streak ', element('strong', '', `${streak} ${streak === 1 ? 'day' : 'days'}`));
   meta.append(streakText, element('span', '', `Next dungeon in ${formatCountdown(msUntilNextDaily(now))}`));
 
-  els.dailyBody.replaceChildren(date, card, status, meta);
+  els.dailyBody.replaceChildren(...[date, card, rules, status, meta].filter(Boolean));
 }
 
 function openHeroPicker({ dismissable, title = 'New run', tab = 'free' }) {
@@ -1111,8 +1148,11 @@ function startRun(chosen, dailyRun = null, hardcore = false) {
     } catch { /* private mode: fine */ }
   }
 
-  // The Daily Challenge is always the standard run, the same for everyone.
-  dungeon = new DungeonRun(LEVEL_ONE, hero, daily ? { seed: dailySeed(daily.key) } : { hardcore });
+  // A daily is the same dungeon for everyone: seeded by the date and which daily it is.
+  dungeon = new DungeonRun(
+    LEVEL_ONE, hero,
+    daily ? { seed: dailySeed(daily.key, daily.mode), hardcore: daily.mode === 'hardcore' } : { hardcore }
+  );
   battle = null;
   activeBattlePlacementIndex = null;
   activeIndex = null;
@@ -1133,37 +1173,45 @@ function startRun(chosen, dailyRun = null, hardcore = false) {
 
 function startDaily() {
   const key = shownDailyKey ?? dailyKey(new Date());
-  startRun(dailyHero(key), { key, official: !refreshDailyResults()[key] });
+  const mode = shownDailyMode;
+  startRun(dailyHero(key, mode), { key, mode, official: !refreshDailyResults(mode)[key] });
 }
 
 // ---- the daily result -----------------------------------------------------
 
 /** Record a finished daily run (first one of the day counts). */
 function finishDaily() {
-  const { key } = daily;
+  const { key, mode } = daily;
+  const hardcore = mode === 'hardcore';
   const result = {
-    score: dungeon.score, retreats: dungeon.retreats, hintsUsed: dungeon.hintsUsed, hero: hero.id,
+    score: hardcore ? dungeon.finalScore() : dungeon.score,
+    retreats: dungeon.retreats,
+    hintsUsed: dungeon.hintsUsed,
+    hero: hero.id,
+    ...(hardcore ? { outcome: dungeon.isVictory() ? 'won' : 'fell' } : {}),
   };
-  const outcome = recordResult(refreshDailyResults(), key, result);
-  dailyResults = outcome.results;
-  if (outcome.official && !saveResults(storage, dailyResults)) {
+  const outcome = recordResult(refreshDailyResults(mode), key, result, mode);
+  dailyResults[mode] = outcome.results;
+  if (outcome.official && !saveResults(storage, dailyResults[mode], mode)) {
     showToast("Couldn't save your result on this device.");
   }
   updateDailyButton();
-  return { key, result, official: outcome.official };
+  return { key, mode, result, official: outcome.official };
 }
 
-function openResult({ key, result, official }) {
-  const record = dailyResults[key] ?? result;
+function openResult({ key, mode = 'normal', result, official }) {
+  const results = dailyResults[mode];
+  const record = results[key] ?? result;
   const recordHero = heroById(record.hero);
-  const streak = computeStreak(dailyResults, dailyKey(new Date()));
+  const streak = computeStreak(results, dailyKey(new Date()));
+  const label = mode === 'hardcore' ? 'hardcore result' : 'result';
 
   els.resultBody.replaceChildren();
   els.resultBody.append(
     element('p', `daily-status${official ? ' done' : ''}`,
       official
-        ? `Recorded as your result for ${key}.`
-        : `Practice run: your recorded result for ${key} stands.`)
+        ? `Recorded as your ${label} for ${key}.`
+        : `Practice run: your recorded ${label} for ${key} stands.`)
   );
   const meta = element('div', 'daily-meta');
   meta.append(element('span', '', `This run: ${describeResult(result)}`));
@@ -1185,6 +1233,7 @@ function openResult({ key, result, official }) {
     hero: recordHero,
     result: record,
     streak,
+    mode,
     url: `${location.origin}${location.pathname}`,
   });
   openModal(els.resultModal, { focus: els.resultCopy, dismiss: closeModal });
@@ -1214,9 +1263,11 @@ function updateDailyButton() {
   if (daily) {
     button.classList.add(daily.official ? 'active' : 'practice');
     button.textContent = daily.official ? 'Daily' : 'Practice';
-    button.setAttribute('aria-label', `${daily.official ? 'Daily challenge' : 'Daily challenge practice'} for ${daily.key} in progress. Open the menu`);
+    const name = daily.mode === 'hardcore' ? 'Daily hardcore challenge' : 'Daily challenge';
+    button.setAttribute('aria-label', `${daily.official ? name : `${name} practice`} for ${daily.key} in progress. Open the menu`);
   } else {
-    const todo = !refreshDailyResults()[key];
+    // The dot is about the standard daily; hardcore is opt-in and never nags.
+    const todo = !refreshDailyResults('normal')[key];
     if (todo) button.classList.add('todo');
     button.textContent = 'Daily';
     button.setAttribute('aria-label', todo ? "Daily challenge: today's dungeon is waiting" : 'Daily challenge');
@@ -1243,6 +1294,18 @@ els.heroStart.addEventListener('click', () => {
   else startRun(chosen, null, els.hardcoreToggle.checked);
 });
 els.hardcoreToggle.addEventListener('change', updateStartButton);
+
+// The standard / hardcore switch on the Daily tab: click, or Left/Right like a radio group.
+for (const [button, name] of [[els.dailyModeNormal, 'normal'], [els.dailyModeHardcore, 'hardcore']]) {
+  button.addEventListener('click', () => selectDailyMode(name));
+  button.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const next = name === 'normal' ? 'hardcore' : 'normal';
+    selectDailyMode(next);
+    (next === 'normal' ? els.dailyModeNormal : els.dailyModeHardcore).focus();
+  });
+}
 
 // Tabs: click, or Left/Right to switch like a native tab list.
 for (const [tab, name] of [[els.tabFree, 'free'], [els.tabDaily, 'daily']]) {
