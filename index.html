@@ -127,6 +127,10 @@
             </label>
           </div>
           <div id="panel-daily" role="tabpanel" aria-labelledby="tab-daily" hidden>
+            <div class="daily-modes" role="radiogroup" aria-label="Which daily dungeon">
+              <button id="daily-mode-normal" class="daily-mode" type="button" role="radio" aria-checked="true">Standard</button>
+              <button id="daily-mode-hardcore" class="daily-mode" type="button" role="radio" aria-checked="false" tabindex="-1">Hardcore</button>
+            </div>
             <div id="daily-body" class="daily-body"></div>
           </div>
           <button id="hero-start" class="modal-done" type="button">Begin run</button>
