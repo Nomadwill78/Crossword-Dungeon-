@@ -24,6 +24,12 @@ Rules **(decided)**:
    five days played just means fewer scores in the sum.
 3. **Hardcore is separate**: its own daily and weekly boards, ranked on the
    hardcore final score (already x1.5). Normal and hardcore scores never mix.
+   **This needs a mode that does not exist yet.** Today the Daily Challenge is
+   always a standard run and hardcore applies only to free play, whose dungeons
+   are random and so cannot be replayed or compared. A hardcore board therefore
+   requires a **Daily Hardcore**: today's same seeded dungeon and hero, played
+   under the hardcore rules. It is built first (section 9, step 1), and the
+   hardcore boards stay hidden until it ships.
 4. **Guests are separate**: guest boards and registered boards are different
    lists. A guest who registers **starts accumulating on the registered boards
    from the moment they register, not before**. Earlier guest runs stay on the
@@ -65,10 +71,17 @@ is the cheapest way to get a score nobody can fake.
   enters an email, gets a magic link, clicks it. The **same user id** continues,
   now with `is_anonymous = false`. Magic link means no passwords to store or
   reset.
-- Each run is stamped `board = 'guest'` or `'registered'` **at submit time**,
-  from the user's state then. That one column implements the rule "start
-  accumulating when you register": earlier runs keep `guest` forever, later ones
-  are `registered`. Nothing is migrated or recomputed.
+- Each run is stamped `board = 'guest'` or `'registered'` from **when it was
+  finished, not when it reaches the server**. The client records `finished_at`
+  with the run; the server sets `board = 'registered'` only if the user has a
+  `registered_at` and `finished_at >= registered_at`, otherwise `'guest'`.
+  So a guest who finishes a run offline, registers, and only then reconnects has
+  that run posted to the **guest** board, as the rule requires. That one column
+  implements "start accumulating when you register": earlier runs keep `guest`
+  forever, later ones are `registered`. Nothing is migrated or recomputed.
+  The server never accepts a `finished_at` in the future or outside the run's
+  day. A client that lies about it can only move one of its own runs from the
+  registered board to the guest board, which is not worth faking.
 - Display name: guests are shown as `Guest-XXXX` (from the id) unless they pick
   a name; registered players choose one (3 to 20 letters, digits, spaces, `_-`;
   checked against a block list; a report button for the rest). The email is
@@ -104,9 +117,13 @@ server recomputes the score from scratch.
 
 **The server** (a Vercel Function) then:
 
-1. checks the player is signed in (guest or registered), the day is today or
-   yesterday in UTC, the mode and hero are valid, and the ruleset version is one
-   it knows (an out-of-date cached game gets "reload to update"),
+1. checks the player is signed in (guest or registered), the mode and hero are
+   valid, the ruleset version is one it knows (an out-of-date cached game gets
+   "reload to update"), and that the run is **inside its submission window**:
+   a day's result is accepted until **48 hours after that UTC day ends**, and
+   the finished-at time falls inside that day. After the window a late result is
+   refused with a clear message, so a closed daily or weekly board never changes
+   under people's feet (a week is final 48 hours after its Saturday ends),
 2. rebuilds `new DungeonRun(LEVEL_ONE, hero, { seed, hardcore })` and applies
    each event through the real methods; any impossible event (a corridor not
    reachable yet, a tile not in the rack, a cast after the fight ended) rejects
@@ -166,6 +183,7 @@ runs (
   hints_used   int  not null,
   ruleset      text not null,
   log          jsonb not null,                        -- the event log, kept so a run can be re-verified
+  finished_at  timestamptz not null,                  -- when the run ended, client-reported, validated
   submitted_at timestamptz not null default now(),
   unique (user_id, board, mode, day)                  -- first finished run of a day counts
 );
@@ -201,11 +219,22 @@ group by user_id, board, mode, week_start;
 Ranked by `total desc, reached_at asc`. A week's board is final after Saturday
 UTC ends; the current week is live.
 
-**Security.** Row-level security on: nobody can insert into `runs` from the
-browser, only the server function (service role) can, after verifying. Boards are
-read through the function or through views that expose only
-`display_name, score, day` (never email or user id). A user may read and delete
-their own rows.
+**Security.** Row-level security on: nobody can insert, update or delete `runs`
+from the browser; only the server function (service role) can insert, after
+verifying. A user may **read** their own rows and nothing else. In particular
+there is **no per-run delete**: if a player could delete their first result they
+could submit another for the same day and re-roll the score, which would defeat
+the first-run rule. The only removal is deleting the **whole account** (which
+cascades to its runs and display name), after which that identity no longer
+exists. Boards are read through the function or through views that expose only
+`display_name, score, day` (never email or user id).
+
+**Limit, stated plainly.** "First finished run counts" is per identity. A guest
+who clears their browser data becomes a new guest, and anyone can register a
+second email, so a determined person can re-roll under a new identity. Replay
+verification stops fake scores; it does not stop this. The mitigations are that
+registering needs a working email, and that the weekly total takes the five best
+of seven days, so one lucky re-roll on one day buys little.
 
 ## 7. API
 
@@ -234,31 +263,41 @@ constraint, plus a per-IP limit on `POST /api/runs`, `/api/profile` and sign-ups
    field, and "Your rank today" on the Daily result card.
 4. **Offline and failure**: the local daily result keeps working exactly as
    today, so the game never needs the network to play. A failed submission is
-   queued in `localStorage` and retried at the next visit; the player is told
-   once ("Saved here; will post when you are online").
+   queued in `localStorage` with its `finished_at`, retried at the next visit,
+   and the player is told the true deadline: "Saved here. It will post when you
+   are back online, within 2 days of the end of the day you played." A queued
+   result that misses the window is dropped with a message saying so; it is
+   kept on the device for their own record.
 5. **Streaks** stay local at first. Syncing them for registered accounts is a
    later step; the table already has what it needs.
 
-## 9. Delivery in four independent pull requests
+## 9. Delivery in five independent pull requests
 
-1. **Event log and replay, no network.** `runlog.js`, `replay.js`, `RULESET`.
+1. **Daily Hardcore mode.** A Hardcore switch on the Daily tab that plays
+   today's same dungeon and hero under the hardcore rules (permadeath, the 15
+   second word clock, the wrong-answer cost, x1.5 final score), with its own
+   once-a-day result and streak kept apart from the normal Daily. This is
+   gameplay, not leaderboard work, and the hardcore boards below depend on it.
+   Open question 4 asks whether it is the same dungeon as the normal Daily.
+2. **Event log and replay, no network.** `runlog.js`, `replay.js`, `RULESET`.
    Tests: the autoplay bot plays many whole runs (normal and hardcore, several
    heroes), each log is replayed and must give exactly the live score;
    tampered logs (edited answer, impossible tile, extra cast, wrong day or
    hero) must be rejected. Shippable alone and invisible to players.
-2. **Backend and guest boards.** Supabase project and migrations (tables, view,
+3. **Backend and guest boards.** Supabase project and migrations (tables, view,
    RLS), `POST /api/runs`, `GET /api/board`, anonymous sign-in, the Leaderboard
    dialog for guests (daily and weekly, both modes). SQL tests for the weekly
    view (best five of seven, fewer than five, ties, week boundaries on a
    Sunday, hardcore kept apart).
-3. **Email sign-up and registered boards.** Magic-link registration that keeps
-   the user id, `board` stamped at submit time, display names, the registered
+4. **Email sign-up and registered boards.** Magic-link registration that keeps
+   the user id, `board` set from `finished_at` against `registered_at`, display names, the registered
    boards, and sign-in on a new device. Tests: guest runs before registration
    never reach a registered total; runs after do; a guest then registered on
-   the same day can have one run on each board.
-4. **Hardening and moderation.** Pacing checks for hardcore, rate limits,
-   report and remove tooling, data export and account deletion, a short privacy
-   notice.
+   the same day can have one run on each board; a guest run finished offline
+   before registering and submitted after it lands on the guest board.
+5. **Hardening and moderation.** Pacing checks for hardcore, rate limits,
+   report and remove tooling (an administrator can remove a score; players
+   cannot), data export and whole-account deletion, a short privacy notice.
 
 Each can be reviewed and shipped on its own, and the game works at every step.
 
@@ -266,8 +305,8 @@ Each can be reviewed and shipped on its own, and the game works at every step.
 
 - Stored per player: an optional display name, an email only for registered
   players, and their runs. No tracking, no ads, nothing sold.
-- Registered players can delete their account and every run from a setting
-  (phase 4). Guests have no email to delete; their rows can be removed on request.
+- Registered players can delete their account, and with it every run, from a
+  setting (step 5). They cannot delete single runs (see section 6). Guests have no email to delete; their rows can be removed on request.
 - Email is handled by Supabase's sign-in; we never see or store a password.
 - Backups: the managed daily backup on the paid tier; the free tier is enough
   for launch but has no point-in-time restore, so the plan assumes upgrading when
@@ -292,5 +331,8 @@ Each can be reviewed and shipped on its own, and the game works at every step.
    generated list (for example "Gentle Quill 482") with no moderation at all?
 4. **Minimum for the weekly board**: should a player with only one or two days
    appear, or only after, say, three? As written they appear.
-5. **Weekly prizes or titles?** Not in this plan; if yes, "final after Saturday"
+5. **Daily Hardcore**: the plan assumes it is the same dungeon and hero as that
+   day's normal Daily, played under hardcore rules. Is that right, or should
+   hardcore have its own dungeon?
+6. **Weekly prizes or titles?** Not in this plan; if yes, "final after Saturday"
    and tie-breaks above would need to be formalised.
