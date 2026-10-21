@@ -451,6 +451,7 @@ async function hardcoreChecks(profile) {
     check(fill.height >= 6 && fill.width >= track.width * 0.9, `the bar is drawn and full at the start (${Math.round(fill.width)}x${Math.round(fill.height)} of ${Math.round(track.width)}px)`);
     if (OUT) await page.screenshot({ path: `${OUT}/ui_${profile.width}_hardcore_battle.png` });
 
+    await page.waitForSelector('#battle-splash', { state: 'hidden' }); // the clock waits for the opening splash
     await page.waitForTimeout(2500);
     const afterWait = await secs(page);
     check(afterWait <= HARDCORE.turnSeconds - 2 && afterWait >= HARDCORE.turnSeconds - 5, `it counts down (${afterWait}s after 2.5s)`);
@@ -488,6 +489,11 @@ async function hardcoreChecks(profile) {
     const { context, page, errors } = await open(profile, { hero: 'duelist', seed: HC_PREF, fakeClock: true });
     check(await reachBattle(page), 'reached a battle on a frozen clock');
     check(await secs(page) === HARDCORE.turnSeconds, 'the clock starts full');
+    check(!(await isHidden(page, '#battle-splash')), 'the BATTLE! splash covers the tiles as the fight opens');
+    await page.clock.runFor(1000);
+    check(await secs(page) === HARDCORE.turnSeconds && !(await isHidden(page, '#battle-splash')), 'and the clock waits: a second of splash costs no time');
+    await page.clock.runFor(350);
+    check(await isHidden(page, '#battle-splash'), 'the splash is gone after 1.3 seconds');
     const hp0 = Number((await hpText(page)).split('/')[0]);
     await page.clock.runFor((HARDCORE.turnSeconds - 1) * 1000);
     check((await secs(page)) === 1 && Number((await hpText(page)).split('/')[0]) === hp0, 'with one second left nothing has happened yet');

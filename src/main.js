@@ -596,8 +596,8 @@ let splashTimer = null;
 
 /**
  * Tell the player this is a fight, not another puzzle: the banner and hint, the
- * monster's portrait, and a brief BATTLE! splash. The splash does not catch taps
- * and does not hold the hardcore clock, so it never costs the player anything.
+ * monster's portrait, and a brief BATTLE! splash. The splash does not catch taps,
+ * and the hardcore clock waits for it (turnPaused), so it never costs the player time.
  */
 function introduceBattle(monster) {
   const framing = battleFraming(monster);
@@ -640,8 +640,11 @@ function playStrike(result) {
 
 let turnClock = null; // { remainingMs, last, timer } while a hardcore word is on the clock
 
-/** The clock stands still while the player reads a card, or is away. */
-const turnPaused = () => document.hidden || openModalEl !== null || !els.overlay.hidden;
+/** The clock stands still while the player reads a card, is away, or the opening splash covers the tiles. */
+const turnPaused = () => document.hidden || openModalEl !== null || !els.overlay.hidden || splashCovers();
+
+/** True while the BATTLE! splash is actually on screen (reduced motion never shows it). */
+const splashCovers = () => !els.battleSplash.hidden && els.battleSplash.offsetParent !== null;
 
 function renderTurnClock() {
   const seconds = HARDCORE.turnSeconds;
