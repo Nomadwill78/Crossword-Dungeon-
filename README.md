@@ -162,3 +162,7 @@ This is a single-level prototype proving out the map-is-a-crossword and
 word-combat mechanics. Not yet built: multiple dungeon levels/runs,
 persistent meta-progression, deck/spell unlocks, audio, and any
 storefront/purchase integration (this repo is just the game client).
+
+Online daily and weekly leaderboards, with free guest play and email
+registration, are designed but not built: see
+[docs/online-leaderboards.md](docs/online-leaderboards.md).
