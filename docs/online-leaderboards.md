@@ -1,8 +1,11 @@
 # Online leaderboards and accounts: design plan
 
-Status: **proposed**, nothing here is built. Written for the browser build, the
-only build with a Daily Challenge. Decisions already made by the project owner
-are marked **(decided)**; anything still open is in "Open questions" at the end.
+Status: **proposed**, nothing here is built. Written for the **browser build**,
+which is the real game and the only one that gets accounts and boards. (The
+Godot build is the separate itch.io release; it has no accounts, no Daily and no
+leaderboards, and is out of scope here.) Decisions already made by the project
+owner are listed in "Decided" at the end; anything still open is in "Open
+questions" after it.
 
 ## 1. What we are building
 
@@ -27,9 +30,10 @@ Rules **(decided)**:
    **This needs a mode that does not exist yet.** Today the Daily Challenge is
    always a standard run and hardcore applies only to free play, whose dungeons
    are random and so cannot be replayed or compared. A hardcore board therefore
-   requires a **Daily Hardcore**: today's same seeded dungeon and hero, played
-   under the hardcore rules. It is built first (section 9, step 1), and the
-   hardcore boards stay hidden until it ships.
+   requires a **Daily Hardcore**: a daily with its **own** seeded dungeon and
+   hero (its own seed, separate from the normal Daily's), played under the
+   hardcore rules. It is built first (section 9, step 1), and the hardcore
+   boards stay hidden until it ships.
 4. **Guests are separate**: guest boards and registered boards are different
    lists. A guest who registers **starts accumulating on the registered boards
    from the moment they register, not before**. Earlier guest runs stay on the
@@ -97,7 +101,8 @@ server recomputes the score from scratch.
 
 **What a run is made of** (all of it already deterministic):
 
-- the dungeon, the hero and every dice roll come from the day (`dailySeed(key)`),
+- the dungeon, the hero and every dice roll come from the day and the mode
+  (`dailySeed(key)` for the normal Daily, a separate seed for Daily Hardcore),
 - the player's decisions: typed answers (`attemptSolve`), bought hints
   (`buyHint`), and for each battle the tiles chosen to cast (`BattleSession`),
   with the battle's randomness fixed per corridor and attempt (`battleRng`).
@@ -124,7 +129,8 @@ server recomputes the score from scratch.
    the finished-at time falls inside that day. After the window a late result is
    refused with a clear message, so a closed daily or weekly board never changes
    under people's feet (a week is final 48 hours after its Saturday ends),
-2. rebuilds `new DungeonRun(LEVEL_ONE, hero, { seed, hardcore })` and applies
+2. rebuilds `new DungeonRun(LEVEL_ONE, hero, { seed, hardcore })` (the seed and
+   hero come from the day and the mode, never from the client) and applies
    each event through the real methods; any impossible event (a corridor not
    reachable yet, a tile not in the rack, a cast after the fight ended) rejects
    the whole run,
@@ -274,11 +280,12 @@ constraint, plus a per-IP limit on `POST /api/runs`, `/api/profile` and sign-ups
 ## 9. Delivery in five independent pull requests
 
 1. **Daily Hardcore mode.** A Hardcore switch on the Daily tab that plays
-   today's same dungeon and hero under the hardcore rules (permadeath, the 15
-   second word clock, the wrong-answer cost, x1.5 final score), with its own
-   once-a-day result and streak kept apart from the normal Daily. This is
-   gameplay, not leaderboard work, and the hardcore boards below depend on it.
-   Open question 4 asks whether it is the same dungeon as the normal Daily.
+   its own daily dungeon and hero (seeded from the date with a hardcore salt, so
+   it is a different puzzle from the normal Daily) under the hardcore rules
+   (permadeath, the 15 second word clock, the wrong-answer cost, x1.5 final
+   score), with its own once-a-day result and streak kept apart from the normal
+   Daily. This is gameplay, not leaderboard work, and the hardcore boards below
+   depend on it.
 2. **Event log and replay, no network.** `runlog.js`, `replay.js`, `RULESET`.
    Tests: the autoplay bot plays many whole runs (normal and hardcore, several
    heroes), each log is replayed and must give exactly the live score;
@@ -314,25 +321,28 @@ Each can be reviewed and shipped on its own, and the game works at every step.
 - Costs: free tiers cover early use. The things that grow are database rows (a
   run is about 5 KB with its log) and function calls.
 
-## 11. Open questions
+## 11. Decided
 
-1. **Which build is "the real one"?** This plan covers the **browser build**,
-   because that is where the Daily Challenge, the seeded dungeons and the
-   replayable rules live. The **Godot build** has no Daily and no seeded runs,
-   and its rules are in GDScript, so it cannot reuse server-side replay. If the
-   paid, registered game is the Godot build, its accounts could share this
-   service, but its scores would need a different checking approach (or a port of
-   the seeded daily to Godot first). Which build do registered players use?
-2. **"Best cumulative score, Sunday to Saturday".** I read this as the weekly
+1. **The real game is the browser build.** Accounts and boards are for it. The
+   Godot build is the itch.io release and is separate: no accounts, no Daily, no
+   leaderboards. (So the server-side replay in section 5 covers everything that
+   gets a board.)
+2. **Hardcore is on its own**: its own boards (section 1) and its own daily
+   dungeon (Daily Hardcore, section 9 step 1), not the normal Daily under
+   different rules.
+3. Weekly score is the sum of a player's five best daily scores in a
+   Sunday-to-Saturday UTC week; guests are separate; a guest who registers
+   starts counting on registered boards from registration; sign-up is by email.
+
+## 12. Open questions
+
+1. **"Best cumulative score, Sunday to Saturday".** I read this as the weekly
    score being the sum of the five best daily scores in that Sunday-to-Saturday
    week, as agreed. If you meant all seven days summed, the view changes from
    `rn <= 5` to no limit.
-3. **Display names**: free text with a block list as above, or choose from a
+2. **Display names**: free text with a block list as above, or choose from a
    generated list (for example "Gentle Quill 482") with no moderation at all?
-4. **Minimum for the weekly board**: should a player with only one or two days
+3. **Minimum for the weekly board**: should a player with only one or two days
    appear, or only after, say, three? As written they appear.
-5. **Daily Hardcore**: the plan assumes it is the same dungeon and hero as that
-   day's normal Daily, played under hardcore rules. Is that right, or should
-   hardcore have its own dungeon?
-6. **Weekly prizes or titles?** Not in this plan; if yes, "final after Saturday"
+4. **Weekly prizes or titles?** Not in this plan; if yes, "final after Saturday"
    and tie-breaks above would need to be formalised.
