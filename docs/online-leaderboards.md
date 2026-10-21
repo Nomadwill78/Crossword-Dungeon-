@@ -4,8 +4,8 @@ Status: **proposed**, nothing here is built. Written for the **browser build**,
 which is the real game and the only one that gets accounts and boards. (The
 Godot build is the separate itch.io release; it has no accounts, no Daily and no
 leaderboards, and is out of scope here.) Decisions already made by the project
-owner are listed in "Decided" at the end; anything still open is in "Open
-questions" after it.
+owner are listed in "Decided" near the end; the few readings of them worth a
+glance are in "Interpretations" after it.
 
 ## 1. What we are building
 
@@ -40,8 +40,17 @@ Rules **(decided)**:
    from the moment they register, not before**. Earlier guest runs stay on the
    guest boards and never count towards a registered weekly total.
 
+5. **Who is shown (decided)**: every player who posts any score is **counted**
+   and ranked, but a board **acknowledges only its top 20**: those 20 are listed
+   with their names. Everyone else still sees their own rank and score (for
+   example "You are #57 this week") without being listed. The **top 3 are
+   highlighted** on a board. There are **no prizes**. The **#1 on a weekly
+   board is that week's champion**, a title shown on the board and kept in a
+   record of past champions.
+
 Everything is a board of (mode, kind, daily or weekly): 2 modes x 2 kinds x
-2 spans = 8 boards, all read from one table of runs.
+2 spans = 8 boards, all read from one table of runs. Each week therefore crowns
+up to four champions (normal and hardcore, guest and registered).
 
 ## 2. How it is saved today, and why that is not enough
 
@@ -88,9 +97,9 @@ is the cheapest way to get a score nobody can fake.
   day. A client that lies about it can only move one of its own runs from the
   registered board to the guest board, which is not worth faking.
 - Display name: guests are shown as `Guest-XXXX` (from the id) unless they pick
-  a name; registered players choose one (3 to 20 letters, digits, spaces, `_-`;
-  checked against a block list; a report button for the rest). The email is
-  never shown to anyone.
+  a name; registered players choose one (**free text**, 3 to 20 letters, digits,
+  spaces, `_-`, checked against a block list; a report button for the rest, and
+  an administrator can remove a name). The email is never shown to anyone.
 - Signing in on a new device with the same email gives the registered history.
   A guest on a new device is a new guest (their old guest runs stay with the old
   device's guest id), which is the cost of "no registration".
@@ -203,7 +212,9 @@ create index runs_weekly on runs (board, mode, week_start, user_id);
 query can use the index.
 
 **Daily board**: `select ... from runs where board = $1 and mode = $2 and day = $3
-order by score desc, submitted_at limit 100`. Ties go to whoever finished first.
+order by score desc, submitted_at limit 20`. Ties go to whoever finished first.
+The same query with `count(*)` and a rank window gives every other player their
+own rank, so players outside the top 20 are counted without being listed.
 
 **Weekly board**: a view that adds up each user's days in the week:
 
@@ -218,8 +229,29 @@ group by user_id, board, mode, week_start;
 ```
 
 Ranked by `total desc, reached_at asc` (a tie goes to whoever reached that total
-first). A week's board is final after Saturday
-UTC ends; the current week is live.
+first). A week's board is live until it is final, which is **48 hours after
+that Saturday ends in UTC** (the same window as late submissions, so it can no
+longer change).
+
+**Weekly champions.** Once a week is final, its #1 on each board (guest or
+registered, normal or hardcore) becomes that week's champion. A daily job
+(a Vercel cron) writes the champion rows for any final week that has none yet,
+so a champion is recorded once and never changes afterwards:
+
+```sql
+weekly_champions (
+  week_start date not null,
+  board      text not null,
+  mode       text not null,
+  user_id    uuid not null references profiles,
+  display_name text not null,        -- copied, so a later rename or deletion does not rewrite history
+  total      int  not null,
+  primary key (week_start, board, mode)
+);
+```
+
+If a champion later deletes their account the row stays but the name is
+replaced by "Deleted player".
 
 **Security.** Row-level security on: nobody can insert, update or delete `runs`
 from the browser; only the server function (service role) can insert, after
@@ -245,7 +277,8 @@ All under `api/` on the same origin.
 | Call | Does |
 |---|---|
 | `POST /api/runs` | the section 5 verification, then insert; returns the verified score, the day rank and the weekly total so far |
-| `GET /api/board?mode=&board=&span=daily\|weekly&key=` | top 100 plus the caller's own row and rank, cached for about 30 s |
+| `GET /api/board?mode=&board=&span=daily\|weekly&key=` | the top 20, plus the caller's own row and rank wherever they are, cached for about 30 s |
+| `GET /api/champions?mode=&board=` | past weekly champions, newest first |
 | `POST /api/profile` | set the display name (validated, rate limited) |
 | (Supabase client) | anonymous sign-in, email magic link, sign-out |
 
@@ -261,8 +294,10 @@ constraint, plus a per-IP limit on `POST /api/runs`, `/api/profile` and sign-ups
    network, so it is built and tested first.
 3. **Client** (`src/net.js` and UI): a Leaderboard dialog with
    Daily/Weekly, Normal/Hardcore and Guest/Registered switches (defaulting to
-   the board you belong to), a Sign in / Register dialog (email), a display-name
-   field, and "Your rank today" on the Daily result card.
+   the board you belong to) listing the top 20 with the top 3 highlighted and a
+   "Your rank" row when you are outside the list, a champion banner for the last
+   finished week, a Sign in / Register dialog (email), a display-name field, and
+   "Your rank today" on the Daily result card.
 4. **Offline and failure**: the local daily result keeps working exactly as
    today, so the game never needs the network to play. A failed submission is
    queued in `localStorage` with its `finished_at`, retried at the next visit,
@@ -289,9 +324,12 @@ constraint, plus a per-IP limit on `POST /api/runs`, `/api/profile` and sign-ups
    hero) must be rejected. Shippable alone and invisible to players.
 3. **Backend and guest boards.** Supabase project and migrations (tables, view,
    RLS), `POST /api/runs`, `GET /api/board`, anonymous sign-in, the Leaderboard
-   dialog for guests (daily and weekly, both modes). SQL tests for the weekly
-   view (a full seven days, fewer than seven, ties, week boundaries on a
-   Sunday, hardcore kept apart).
+   dialog for guests (daily and weekly, both modes, top 20 with the top 3
+   highlighted, and the caller's own rank), and the weekly champions job. SQL
+   tests for the weekly view (a full seven days, fewer than seven, ties, week
+   boundaries on a Sunday, hardcore kept apart) and for the champions job (the
+   #1 of a final week is recorded once and never changes; a week not yet final
+   has none).
 4. **Email sign-up and registered boards.** Magic-link registration that keeps
    the user id, `board` set from `finished_at` against `registered_at`, display names, the registered
    boards, and sign-in on a new device. Tests: guest runs before registration
@@ -326,16 +364,24 @@ Each can be reviewed and shipped on its own, and the game works at every step.
 2. **Hardcore is on its own**: its own boards (section 1) and its own daily
    dungeon (Daily Hardcore, section 9 step 1), not the normal Daily under
    different rules.
-3. Weekly score is the **sum of all of a player's daily scores in a
+3. **Display names are free text with a block list** (and report and remove
+   tools); there are no generated names.
+4. **Every scorer is counted, the top 20 are listed.** Anyone who posts a score
+   is ranked and sees their own rank; a board lists only its top 20 by name. The
+   **top 3 are highlighted**, there are **no prizes**, and **#1 on a weekly board
+   is that week's champion** (final 48 hours after Saturday ends).
+5. Weekly score is the **sum of all of a player's daily scores in a
    Sunday-to-Saturday UTC week** (seven days captured; a missed day adds
    nothing); guests are separate; a guest who registers
    starts counting on registered boards from registration; sign-up is by email.
 
-## 12. Open questions
+## 12. Interpretations worth a glance
 
-1. **Display names**: free text with a block list as above, or choose from a
-   generated list (for example "Gentle Quill 482") with no moderation at all?
-2. **Minimum for the weekly board**: should a player with only one or two days
-   appear, or only after, say, three? As written they appear.
-3. **Weekly prizes or titles?** Not in this plan; if yes, "final after Saturday"
-   and tie-breaks above would need to be formalised.
+Nothing is blocking. Three readings of the decisions that are easy to change:
+
+- **"Acknowledged" means listed.** A player outside the top 20 is counted and is
+  told their own rank privately, but is not named on the board.
+- **Highlighting the top 3** applies to the daily boards as well as the weekly
+  ones; only the weekly #1 gets the champion title.
+- **Champions are crowned per board**, so a week has up to four (normal and
+  hardcore, guest and registered), not one overall.
