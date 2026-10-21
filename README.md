@@ -32,6 +32,11 @@ Then open `http://localhost:8080/`.
   one, starting from the auto-unlocked entrance (`QUEST`).
 - Corridors with a `monster` drop you into a battle when solved. Corridors
   with a `reward` (heal / score / bonus) pay out immediately instead.
+- A battle is framed as a fight so it does not read as another puzzle: a
+  BATTLE! (or BOSS BATTLE!) banner that says how you attack, your hero
+  facing the monster's portrait with a VS between them and both HP bars, a
+  brief splash as it opens, and a floating "-7" over whoever was hit after
+  every cast. The wording lives in `src/battlefx.js` (unit tested).
 - In battle, click letter tiles to build a word and hit "Cast Word." A valid
   dictionary word (3+ letters) damages the monster — longer words and
   consecutive hits (combo streak) hit harder, and casting one of the
@@ -103,6 +108,7 @@ Then open `http://localhost:8080/`.
 - `src/dungeon.js` (`DungeonRun`) — turns the generated grid into a
   corridor-adjacency graph, tracks solved/cleared state, and enforces
   reachability so the map can't soft-lock.
+- `src/battlefx.js` — the battle screen's banner, hint and floating strike text.
 - `src/combat.js` (`BattleSession`) — the letter rack, Scrabble-style
   letter values and bag distribution (with a standing guarantee of at
   least two vowels in the rack, even after mid-battle refills), word
