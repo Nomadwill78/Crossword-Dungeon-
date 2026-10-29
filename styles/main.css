@@ -648,6 +648,22 @@ main { position: relative; }
 .mode-tab[aria-selected="true"] { color: var(--gold); border-color: var(--gold); background: var(--stone-dark); }
 .mode-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+.daily-modes { display: flex; gap: 0.4rem; margin-bottom: 0.6rem; }
+.daily-mode {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.35rem 0.6rem;
+  background: var(--panel-light);
+  color: var(--text-dim);
+  border: 2px solid var(--stone);
+  border-radius: 8px;
+  font: bold 0.9rem var(--font);
+  cursor: pointer;
+}
+.daily-mode[aria-checked="true"] { color: var(--gold); border-color: var(--gold); background: var(--stone-dark); }
+.daily-mode#daily-mode-hardcore[aria-checked="true"] { color: var(--danger); border-color: var(--danger); }
+.daily-mode:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.daily-rules { margin: 0; color: var(--danger); font-size: 0.9rem; font-weight: bold; }
 .daily-body { display: flex; flex-direction: column; gap: 0.6rem; }
 .daily-date { color: var(--text-dim); font-size: 0.9rem; }
 .daily-date strong { color: var(--text); letter-spacing: 0.04em; }

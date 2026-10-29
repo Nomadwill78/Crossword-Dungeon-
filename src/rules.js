@@ -78,7 +78,7 @@ export function rulesSections(facts) {
       ? [{
         title: hc ? 'Hardcore mode (on)' : 'Hardcore mode',
         paragraphs: [
-          'A harsher way to play free runs, chosen when you start a new run. The Daily Challenge is always played on normal rules.',
+          'A harsher way to play, chosen when you start a new free run, or by picking Hardcore in the Daily challenge (its own dungeon and hero each day).',
         ],
         items: [
           'No retreat: if your HP reaches 0 the run is over.',
@@ -98,7 +98,7 @@ export function rulesSections(facts) {
       title: 'Daily challenge',
       paragraphs: [
         'Once a day (the day changes at midnight UTC) there is a Daily Challenge: everyone plays the same dungeon, as the same hero, with the same starting letters in each battle. Open it from the Daily button.',
-        'Your first finished run of the day is recorded, with your Score, retreats and hints used, and it extends your streak. Replays are practice and do not count. You can copy your result to share it.',
+        `${hardcore ? 'There is also a Daily Hardcore, with its own dungeon and hero under the hardcore rules, and its own result and streak. ' : ''}Your first finished run of the day is recorded, with your Score, retreats and hints used, and it extends your streak. Replays are practice and do not count. You can copy your result to share it.`,
       ],
     },
     {

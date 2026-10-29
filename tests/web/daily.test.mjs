@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  STORAGE_KEY, dailyKey, dailySeed, dailyHero, previousKey, msUntilNextDaily, formatCountdown,
+  STORAGE_KEY, MODES, storageKeyFor, dailyKey, dailySeed, dailyHero, previousKey, msUntilNextDaily, formatCountdown,
   loadResults, saveResults, recordResult, computeStreak, shareText,
 } from '../../src/daily.js';
 import { HERO_LIST } from '../../src/heroes.js';
+import { DungeonRun } from '../../src/dungeon.js';
+import { LEVEL_ONE } from '../../src/wordlist.js';
 
 const result = (score = 100, retreats = 0, hintsUsed = 0, hero = 'scribe') => ({ score, retreats, hintsUsed, hero });
 
@@ -171,4 +173,95 @@ test('the share text', () => {
   const single = shareText({ key: '2026-10-12', hero, result: result(5, 0, 1), streak: 1, url: 'https://example.test/' });
   assert.match(single, /0 retreats · 1 hint\n1 day in a row\nhttps:\/\/example\.test\/$/);
   assert.ok(!/in a row/.test(shareText({ key: '2026-10-12', hero, result: result(), streak: 0 })), 'no streak line at zero');
+});
+
+// ---- Daily Hardcore: its own dungeon, hero, results and streak ---------------
+
+const hard = (score = 100, outcome = 'won', hintsUsed = 0, hero = 'scribe') => ({ score, retreats: 0, hintsUsed, hero, outcome });
+const layout = (run) => run.placements.map((p) => `${p.word}@${p.row},${p.col}${p.dir}`).join('|');
+
+test('there are two dailies, and the standard one is exactly what it always was', () => {
+  assert.deepEqual(MODES, ['normal', 'hardcore']);
+  assert.equal(dailySeed('2026-10-12'), 'wordsmith-daily-v1:2026-10-12', 'pinned: changing it changes everyone\'s day');
+  assert.equal(dailySeed('2026-10-12', 'normal'), dailySeed('2026-10-12'));
+  assert.equal(dailyHero('2026-10-12', 'normal'), dailyHero('2026-10-12'));
+  assert.equal(storageKeyFor('normal'), STORAGE_KEY);
+  assert.equal(STORAGE_KEY, 'wordsmith-daily', 'pinned: players\' saved results live here');
+  assert.throws(() => dailySeed('2026-10-12', 'easy'), /unknown daily mode/);
+});
+
+test('the hardcore daily has its own seed, its own hero and its own storage', () => {
+  assert.equal(dailySeed('2026-10-12', 'hardcore'), 'wordsmith-daily-hardcore-v1:2026-10-12');
+  assert.notEqual(dailySeed('2026-10-12', 'hardcore'), dailySeed('2026-10-12', 'normal'));
+  assert.equal(dailyHero('2026-10-12', 'hardcore'), dailyHero('2026-10-12', 'hardcore'), 'stable for a day');
+  assert.notEqual(storageKeyFor('hardcore'), storageKeyFor('normal'));
+
+  // Over a stretch of days the two heroes are not the same sequence (the dungeon is a different puzzle).
+  let differs = 0;
+  const seen = new Set();
+  for (let d = 0; d < 60; d += 1) {
+    const key = new Date(Date.UTC(2026, 8, 1) + d * 86400000).toISOString().slice(0, 10);
+    if (dailyHero(key, 'hardcore').id !== dailyHero(key, 'normal').id) differs += 1;
+    seen.add(dailyHero(key, 'hardcore').id);
+  }
+  assert.ok(differs > 20, `the heroes differ on most days (${differs} of 60)`);
+  assert.equal(seen.size, HERO_LIST.length, 'every hero gets a turn in hardcore too');
+});
+
+test('the same day gives the same hardcore dungeon, and not the standard one', () => {
+  const key = '2026-10-12';
+  const run = () => new DungeonRun(LEVEL_ONE, dailyHero(key, 'hardcore'), { seed: dailySeed(key, 'hardcore'), hardcore: true });
+  const a = run();
+  const b = run();
+  assert.equal(a.hardcore, true, 'it plays by the hardcore rules');
+  assert.equal(layout(a), layout(b), 'everyone gets the same dungeon');
+  assert.equal(a.battleRng(1)(), b.battleRng(1)(), 'and the same dice');
+  const standard = new DungeonRun(LEVEL_ONE, dailyHero(key), { seed: dailySeed(key) });
+  assert.equal(standard.hardcore, false);
+  assert.notEqual(layout(a), layout(standard), 'it is a different puzzle from that day\'s standard dungeon');
+  const other = new DungeonRun(LEVEL_ONE, dailyHero('2026-10-13', 'hardcore'), { seed: dailySeed('2026-10-13', 'hardcore'), hardcore: true });
+  assert.notEqual(layout(a), layout(other), 'and tomorrow\'s is different again');
+});
+
+test('hardcore results are kept apart and must say how the run ended', () => {
+  const storage = memoryStorage();
+  saveResults(storage, { '2026-10-12': result(300) }, 'normal');
+  saveResults(storage, { '2026-10-12': hard(450, 'fell') }, 'hardcore');
+  assert.deepEqual(Object.keys(storage.data).sort(), ['wordsmith-daily', 'wordsmith-daily-hardcore']);
+  assert.equal(loadResults(storage, 'normal')['2026-10-12'].score, 300);
+  assert.equal(loadResults(storage).outcome, undefined, 'default is the standard daily');
+  assert.deepEqual(loadResults(storage, 'hardcore')['2026-10-12'], hard(450, 'fell'));
+
+  // A hardcore record without an outcome, or a standard one with one, is not trusted.
+  assert.deepEqual(loadResults(memoryStorage({ 'wordsmith-daily-hardcore': JSON.stringify({ '2026-10-12': result(10) }) }), 'hardcore'), {});
+  assert.deepEqual(loadResults(memoryStorage({ 'wordsmith-daily': JSON.stringify({ '2026-10-12': hard(10) }) }), 'normal'), {});
+  assert.deepEqual(loadResults(memoryStorage({ 'wordsmith-daily-hardcore': JSON.stringify({ '2026-10-12': { ...hard(10), outcome: 'dunno' } }) }), 'hardcore'), {});
+});
+
+test('the first finished hardcore run counts, a win or a fall', () => {
+  const fell = recordResult({}, '2026-03-15', hard(120, 'fell'), 'hardcore');
+  assert.equal(fell.official, true);
+  assert.equal(fell.results['2026-03-15'].outcome, 'fell');
+  const retry = recordResult(fell.results, '2026-03-15', hard(900, 'won'), 'hardcore');
+  assert.equal(retry.official, false, 'a later win does not replace a fall');
+  assert.equal(retry.results['2026-03-15'].score, 120);
+  assert.equal(recordResult({}, '2026-03-15', result(5), 'hardcore').official, false, 'no outcome, no record');
+});
+
+test('the two streaks are independent', () => {
+  const normal = { '2026-03-14': result(), '2026-03-15': result() };
+  const hardcore = { '2026-03-15': hard(10, 'fell') };
+  assert.equal(computeStreak(normal, '2026-03-15'), 2);
+  assert.equal(computeStreak(hardcore, '2026-03-15'), 1, 'a fall still counts as a finished day');
+  assert.equal(computeStreak({}, '2026-03-15'), 0);
+});
+
+test('the hardcore share text says how it ended', () => {
+  const hero = HERO_LIST[1];
+  assert.equal(
+    shareText({ key: '2026-10-12', hero, result: hard(612, 'won', 2), streak: 3, mode: 'hardcore' }),
+    ["Wordsmith's Gambit — Daily Hardcore 2026-10-12", 'The Warden: 612 Score', 'Cleared · 2 hints', '3 days in a row'].join('\n')
+  );
+  assert.match(shareText({ key: '2026-10-12', hero, result: hard(80, 'fell', 1), streak: 0, mode: 'hardcore' }), /Fell · 1 hint$/);
+  assert.match(shareText({ key: '2026-10-12', hero, result: result(5, 0, 1), streak: 0 }), /^Wordsmith's Gambit — Daily 2026-10-12/, 'the standard text is unchanged');
 });
