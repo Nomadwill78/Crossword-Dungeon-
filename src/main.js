@@ -128,6 +128,7 @@ let victoryShown = false;
 let dungeon = new DungeonRun(LEVEL_ONE, hero, { hardcore: hardcorePref });
 let battle = null;
 let activeBattlePlacementIndex = null;
+let battleResolved = false;
 
 const avatar = new HeroAvatar(els.avatar, hero);
 /** The same hero, larger, facing the monster on the battle screen. */
@@ -584,6 +585,7 @@ function handleAttempt(index, guess, itemEl) {
 function startBattle(index) {
   const p = dungeon.placements[index];
   activeBattlePlacementIndex = index;
+  battleResolved = false;
   battle = new BattleSession(
     p.monster, dictionary, themeWords, dungeon.playerHP, dungeon.playerMaxHP, undefined,
     { damageBonus: damageBonus(dungeon.hero) },
@@ -714,6 +716,15 @@ function finishCast(result) {
     if (battle !== finished) return;
     const cleared = dungeon.monsterPlacements().filter((m) => dungeon.isCleared(m.index)).length;
     const total = dungeon.monsterPlacements().length;
+    // A Daily Hardcore fall is terminal the moment the battle ends, and it
+    // is that day's result. Record it now, before the overlay is shown, so
+    // closing or reloading the page before dismissing the overlay can't
+    // lose it. (Same record-before-overlay pattern as checkVictory.)
+    let fallOutcome = null;
+    if (daily && daily.mode === 'hardcore' && !finished.won) {
+      resolveBattle();
+      fallOutcome = finishDaily();
+    }
     showOverlay(
       finished.won ? 'Victory!' : dungeon.hardcore ? 'You have fallen!' : 'Retreat!',
       finished.won
@@ -721,9 +732,26 @@ function finishCast(result) {
         : dungeon.hardcore
           ? `${finished.monster.name} ends your run. ${cleared} of ${total} monster corridors cleared.`
           : `You barely escape ${finished.monster.name}. Patch up and try again.`,
-      () => endBattle()
+      () => endBattle(fallOutcome)
     );
   }, 300);
+}
+
+/**
+ * Apply the finished battle to the dungeon run. Safe to call twice: the
+ * second call is a no-op, so finishCast can resolve early (to record a
+ * Daily Hardcore fall before its overlay is shown) without endBattle
+ * resolving it again on dismiss.
+ */
+function resolveBattle() {
+  if (battleResolved || !battle) return;
+  battleResolved = true;
+  const won = battle.won;
+  dungeon.markBattleResolved(activeBattlePlacementIndex, {
+    won,
+    remainingPlayerHP: won ? battle.playerHP : Math.round(dungeon.playerMaxHP * RETREAT_HP_FRACTION),
+    scoreGained: battle.scoreGained,
+  });
 }
 
 function recordHardcoreRun(won) {
@@ -731,14 +759,10 @@ function recordHardcoreRun(won) {
   if (!saveStats(storage, hardcoreStats)) showToast("Couldn't save your hardcore record on this device.");
 }
 
-function endBattle() {
+function endBattle(fallOutcome = null) {
   stopTurnClock();
   const won = battle.won;
-  dungeon.markBattleResolved(activeBattlePlacementIndex, {
-    won,
-    remainingPlayerHP: won ? battle.playerHP : Math.round(dungeon.playerMaxHP * RETREAT_HP_FRACTION),
-    scoreGained: battle.scoreGained,
-  });
+  resolveBattle();
   battle = null;
   activeBattlePlacementIndex = null;
   els.battleView.hidden = true;
@@ -749,7 +773,10 @@ function endBattle() {
     // Hardcore: no retreat. The run is over. A Daily Hardcore fall is that
     // day's result; a free hardcore fall goes in the free-play record.
     if (daily) {
-      openResult(finishDaily());
+      // Already recorded in finishCast before the overlay was shown, so a
+      // closed or reloaded tab can't lose the day's result. The fallback
+      // covers paths that reach here without going through finishCast.
+      openResult(fallOutcome ?? finishDaily());
       return;
     }
     recordHardcoreRun(false);
